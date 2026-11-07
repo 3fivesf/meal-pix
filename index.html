@@ -110,6 +110,17 @@ h1 .dots i{width:10px;height:10px;border-radius:50%;display:block}
 .preview-card b{font-family:var(--display);font-size:18px;line-height:1.1}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom, 0px));transform:translate(-50%,20px);opacity:0;pointer-events:none;background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:999px;font-weight:600;font-size:14px;transition:opacity .2s,transform .2s;z-index:40;max-width:calc(100% - 32px);text-align:center}
 .toast.show{opacity:1;transform:translate(-50%,0)}
+.checkrow{display:flex;gap:10px;align-items:center;font-size:14px;font-weight:500;padding:10px 12px;border-radius:14px;background:var(--surface);border:1px solid var(--line)}
+.checkrow input{width:20px;height:20px;accent-color:var(--accent);flex:none}
+.linkbtn{background:none;border:0;padding:0;color:var(--accent);font-weight:600;text-decoration:underline;text-underline-offset:2px;font-size:inherit}
+.invite{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:18px;background:var(--surface);border:1px solid var(--line)}
+.invite .code{font-family:var(--display);font-weight:800;font-size:32px;letter-spacing:.14em;font-variant-numeric:tabular-nums;user-select:all}
+.mlist{display:flex;flex-direction:column;gap:6px}
+.mrow{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:14px;background:var(--surface);border:1px solid var(--line)}
+.mrow .mname{flex:1;min-width:0;font-weight:600}
+.mrow .tag{margin-left:4px}
+.dangerzone{display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid var(--line)}
+.btn.danger{color:#E5484D}
 .foot2{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;color:var(--muted);font-size:13px;padding-top:18px;border-top:1px solid var(--line)}
 .foot2 p{margin:0}
 .heart{position:absolute;bottom:8px;right:8px;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.55);color:var(--ink)}
@@ -301,13 +312,11 @@ button.tile:hover{background:var(--bg)}
     <button role="tab" data-tab="list" aria-selected="false">Groceries</button>
   </nav>
   <main id="view"></main>
-  <footer class="foot2">
-    <p>Your meals, photos and plans stay on this device.</p>
-    <div class="row"><button type="button" class="btn sm" data-act="backup">Back up</button><label class="btn sm" for="restoreIn" style="cursor:pointer">Restore</label><input type="file" id="restoreIn" accept="application/json,.json" style="position:absolute;width:1px;height:1px;opacity:0"></div>
-  </footer>
+  <footer class="foot2" id="foot2"></footer>
 </div>
 <div id="sheetRoot"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
 const COLORS=['tomato','mango','lime','sky','grape','bubble','teal','cherry','coral','peach','tangerine','butter','lemon','pistachio','mint','sage','aqua','cornflower','periwinkle','lavender','orchid','blush','rose','sand','clay','cloud','stone'];
 const SWATCH_ORDER=['cherry','tomato','coral','tangerine','peach','mango','butter','lemon','pistachio','lime','sage','mint','teal','aqua','sky','cornflower','periwinkle','lavender','grape','orchid','bubble','rose','blush','sand','clay','cloud','stone'];
@@ -391,6 +400,7 @@ let tmr, saving=false, again=false;
 const status=()=>{};
 let toastT; function toast(t){ let el=document.getElementById('toast'); if(!el){el=document.createElement('div');el.id='toast';el.className='toast';el.setAttribute('role','status');document.body.appendChild(el)} el.textContent=t; el.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),2200) }
 function save(){
+  if(typeof shared==='function'&&shared()){ cacheShared(); clearTimeout(save.ct); save.ct=setTimeout(push,400); clearTimeout(save.pt); save.pt=setTimeout(pruneShared,6000); return }
   try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){ toast('Storage is full. Back up, then remove some photos.') }
   clearTimeout(save.pt); save.pt=setTimeout(prunePics,3000);
   clearTimeout(tmr); tmr=setTimeout(flush,700);
@@ -413,7 +423,7 @@ const userById=id=>S.users.find(u=>u.id===id);
 const favOf=(m,u)=>(m.favBy||[]).includes(u);
 const activeFav=m=>favOf(m,S.activeUser);
 const weekFav=m=>S.weekUsers.some(u=>favOf(m,u));
-function toggleFav(m){ const u=S.activeUser; m.favBy=favOf(m,u)?m.favBy.filter(x=>x!==u):[...(m.favBy||[]),u]; }
+function toggleFav(m){ const u=heartUser(); m.favBy=favOf(m,u)?m.favBy.filter(x=>x!==u):[...(m.favBy||[]),u]; }
 const initial=n=>(String(n).trim()[0]||'?').toUpperCase();
 const avatar=(u,size)=>`<span class="ava" style="background:${col(u.color)};${size?`width:${size}px;height:${size}px;font-size:${Math.round(size*.5)}px`:''}">${esc(initial(u.name))}</span>`;
 const favDots=m=>S.users.length>1?`<span class="fdots">${S.users.filter(u=>favOf(m,u.id)).map(u=>avatar(u,18)).join('')}</span>`:'';
@@ -508,7 +518,12 @@ function cartHTML(){
 }
 
 /* ---------- render ---------- */
+function footHTML(){
+  if(shared()) return `<p>Shared with <b>${esc(C.household?.name||'your household')}</b>${C.offline?' · offline, changes will sync':''}</p><div class="row"><button type="button" class="btn sm" data-act="household">Household &amp; invite</button></div>`;
+  return `<p>Your meals, photos and plans stay on this device.</p><div class="row"><button type="button" class="btn sm primary" data-act="share">Share with family</button><button type="button" class="btn sm" data-act="backup">Back up</button><label class="btn sm" for="restoreIn" style="cursor:pointer">Restore</label><input type="file" id="restoreIn" accept="application/json,.json" style="position:absolute;width:1px;height:1px;opacity:0"></div>`;
+}
 function render(){
+  const f=document.getElementById('foot2'); if(f) f.innerHTML=footHTML();
   document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===tab));
   const v=$('#view');
   if(tab==='week') v.innerHTML=weekHTML();
@@ -558,12 +573,12 @@ function cardHTML(m){
   return `<div class="card" style="${cardStyle(m)}"><button class="cardbtn" data-open="${m.id}">${m.img?`<img class="cimg" src="${esc(pic(m.img))}" alt="" loading="lazy" style="aspect-ratio:${Math.max(0.75,m.ratio||1.6)}">`:''}${chip}
     <h3>${esc(m.name)}</h3><p>${esc(m.ingredients.join(', ')||'No ingredients yet')}</p>
     <span class="meta">${favDots(m)}<span>${m.ingredients.length} ingredient${m.ingredients.length===1?'':'s'}${usedCount(m.id)?` · ${usedCount(m.id)}× this week`:''}</span></span></button>
-    <button class="heart" data-fav="${m.id}" aria-pressed="${activeFav(m)}" aria-label="${activeFav(m)?'Remove from':'Save to'} ${esc(userById(S.activeUser)?.name||'my')}’s library">${HEART(activeFav(m))}</button></div>`;
+    ${shared()&&S.activeUser!==me()?'':`<button class="heart" data-fav="${m.id}" aria-pressed="${favOf(m,heartUser())}" aria-label="${favOf(m,heartUser())?'Remove from':'Save to'} ${shared()?'my':esc(userById(S.activeUser)?.name||'my')+'’s'} library">${HEART(favOf(m,heartUser()))}</button>`}</div>`;
 }
 function mealsHTML(){
   const recs=byCart(S.meals.filter(m=>m.rec)), lib=S.meals.filter(activeFav), all=byCart(S.meals);
   if(!mealsTab) mealsTab='library';
-  const peopleH=`<div class="people" role="group" aria-label="Whose favorites">${S.users.map(u=>`<button type="button" data-auser="${u.id}" aria-pressed="${u.id===S.activeUser}">${avatar(u)}<span>${esc(u.name)}</span></button>`).join('')}<button type="button" class="addround" data-act="${S.users.length<4?'addperson':'people'}" aria-label="${S.users.length<4?'Add or edit people':'Edit people'}">${ICON.plus}</button></div>`;
+  const peopleH=`<div class="people" role="group" aria-label="Whose favorites">${S.users.map(u=>`<button type="button" data-auser="${u.id}" aria-pressed="${u.id===S.activeUser}">${avatar(u)}<span>${esc(u.name)}</span></button>`).join('')}${shared()?`<button type="button" class="addround" data-act="household" aria-label="Invite people">${ICON.plus}</button>`:`<button type="button" class="addround" data-act="${S.users.length<4?'addperson':'people'}" aria-label="${S.users.length<4?'Add or edit people':'Edit people'}">${ICON.plus}</button>`}</div>`;
   const tabsH=`<div class="subtabs" role="tablist">${[['library',S.users.length>1?`${esc(userById(S.activeUser).name)}’s library`:'My library',lib.length],['recommended','Recommended',recs.length],['all','All',all.length]].map(([k,l,n])=>`<button role="tab" data-mtab="${k}" aria-selected="${mealsTab===k}">${l}<span class="n">${n}</span></button>`).join('')}</div>`;
   const add=`<button class="card add" data-act="new">${ICON.plus.replace('<svg','<svg width="22" height="22"')}New meal</button>`;
   const sortNote=S.cart?'Meals with the most ingredients already in your Sprouts cart come first.':'Sync your Sprouts cart on the Groceries tab to sort meals by what you already have.';
@@ -590,7 +605,7 @@ function mealSheet(id){
     ${hasNut?`<div class="pfc">${NUTS.map(([k,,ab],i)=>`${i?'<span class="dash">-</span>':''}<span><b>${ab}</b> ${esc(nut[k]||'—')}</span>`).join('')}</div>`:''}
     <span class="lbl">Ingredients</span>
     <ul class="ingl">${m.ingredients.map(x=>{const h=inCart(x);return `<li>${h&&photoOf(h.name)?`<img src="${photoOf(h.name)}" alt="" style="width:34px;height:34px;border-radius:8px;object-fit:contain;background:#fff;flex:none">`:`<span class="sw" style="background:${col(m.color)};width:12px;height:12px;flex:none"></span>`}<span>${esc(x)}</span>${h?'<span class="tag">In cart</span>':''}</li>`}).join('')||'<li><span>No ingredients yet</span></li>'}</ul>
-    <div class="foot"><button class="heart big" id="fv" aria-pressed="${activeFav(m)}">${HEART(activeFav(m))}${activeFav(m)?`In ${esc(userById(S.activeUser)?.name||'my')}’s library`:'Save to library'}</button><button class="btn primary" id="cl">Done</button></div>`};
+    <div class="foot"><button class="heart big" id="fv" aria-pressed="${favOf(m,heartUser())}">${HEART(favOf(m,heartUser()))}${favOf(m,heartUser())?(shared()?'In my library':`In ${esc(userById(S.activeUser)?.name||'my')}’s library`):(shared()?'Save to my library':'Save to library')}</button><button class="btn primary" id="cl">Done</button></div>`};
   openSheet(draw(), sh=>{
     sh.addEventListener('scroll',e=>{ const g=e.target; if(!g.classList||!g.classList.contains('gallery')) return; const i=Math.round(g.scrollLeft/g.clientWidth); sh.querySelectorAll('.gdots i').forEach((d,k)=>d.classList.toggle('on',k===i)) },true);
     sh.addEventListener('click',e=>{
@@ -762,12 +777,12 @@ const idbPut=(k,blob)=>idbDo('readwrite',st=>st.put(blob,k));
 const idbGet=k=>idbDo('readonly',st=>st.get(k));
 const idbKeys=()=>idbDo('readonly',st=>st.getAllKeys());
 const idbDel=k=>idbDo('readwrite',st=>st.delete(k));
-function pic(u){ if(!u) return ''; if(u.startsWith('idb:')) return picURL[u]||''; return u }
+function pic(u){ if(!u) return ''; if(u.startsWith('idb:')) return picURL[u]||''; if(u.startsWith('sb:')){ if(!picURL[u]&&shared()){ clearTimeout(pic.t); pic.t=setTimeout(()=>signPhotos().then(()=>render()),50) } return picURL[u]||'' } return u }
 async function loadPics(){
   try{ const keys=await idbKeys(); for(const k of keys){ const b=await idbGet(k); if(b) picURL['idb:'+k]=URL.createObjectURL(b) } }catch(e){}
 }
 function usedPicIds(){ const ids=new Set(); S.meals.forEach(m=>mealPhotos(m).forEach(p=>{if(p.u&&p.u.startsWith('idb:')) ids.add(p.u.slice(4))})); Object.values(S.cartPhotos||{}).forEach(u=>{if(u&&u.startsWith('idb:')) ids.add(u.slice(4))}); return ids }
-async function prunePics(){ try{ const used=usedPicIds(); for(const k of await idbKeys()) if(!used.has(k)){ await idbDel(k); delete picURL['idb:'+k] } }catch(e){} }
+async function prunePics(){ if(shared()) return; try{ const used=usedPicIds(); for(const k of await idbKeys()) if(!used.has(k)){ await idbDel(k); delete picURL['idb:'+k] } }catch(e){} }
 async function shrink(file,max){
   const url=URL.createObjectURL(file);
   try{
@@ -779,6 +794,7 @@ async function shrink(file,max){
   } finally { URL.revokeObjectURL(url) }
 }
 async function storeImage(blob){
+  if(shared()) return await uploadPhoto(blob);
   const id=uid()+Date.now().toString(36);
   await idbPut(id,blob);
   const u='idb:'+id; picURL[u]=URL.createObjectURL(blob); return u;
@@ -990,6 +1006,338 @@ async function restore(file){
   }catch(e){ toast('That file isn’t a Meal Pix backup.') }
 }
 
+/* ---------- shared household (Supabase) ---------- */
+const SB_URL='https://oykenifditvlstqkvjkc.supabase.co';
+const SB_KEY='sb_publishable_NQxZ-An7nC428uigkkbITw_tc1sYwve';
+const CKEY='meal-pix-household-v1';
+const C={sb:null,user:null,hid:null,household:null,base:null,busy:false,dirty:false,chan:null,pullT:null,errShown:0,offline:false};
+const shared=()=>!!(C.user&&C.hid);
+const me=()=>C.user&&C.user.id;
+const heartUser=()=>shared()?me():S.activeUser;
+let pendingJoin='';
+try{ const m=location.hash.match(/join=([A-Za-z0-9]{4,12})/); if(m){ pendingJoin=m[1].toUpperCase(); sessionStorage.setItem('mp-join',pendingJoin); history.replaceState(null,'',location.pathname+location.search) } else pendingJoin=sessionStorage.getItem('mp-join')||'' }catch(e){}
+
+function readLocal(){ try{ const c=localStorage.getItem(KEY); return c?migrate(normalize(JSON.parse(c))):null }catch(e){ return null } }
+function canon(){
+  const meals={}, favs=[], plans={};
+  S.meals.forEach(m=>{ const {id,favBy,...d}=m; meals[id]=JSON.stringify(d); (favBy||[]).forEach(u=>favs.push(id+'|'+u)) });
+  for(const u in S.plans) plans[u]=JSON.stringify(S.plans[u]||{});
+  return {meals,favs:favs.sort(),plans,state:JSON.stringify({checked:S.checked||{},ings:S.ings||[]})};
+}
+const sameCanon=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+function cacheShared(){ try{ localStorage.setItem(CKEY,JSON.stringify({uid:me(),hid:C.hid,household:C.household,base:C.base,S:{users:S.users,meals:S.meals,plans:S.plans,checked:S.checked,ings:S.ings,activeUser:S.activeUser,weekUsers:S.weekUsers}})) }catch(e){} }
+function fixView(){
+  if(!S.users.some(u=>u.id===S.activeUser)) S.activeUser=me()&&S.users.some(u=>u.id===me())?me():(S.users[0]?.id||'');
+  S.weekUsers=(S.weekUsers||[]).filter(id=>S.users.some(u=>u.id===id));
+  if(!S.weekUsers.length) S.weekUsers=[S.activeUser].filter(Boolean);
+}
+function applyShared(d,keepView){
+  const view={activeUser:S.activeUser,weekUsers:S.weekUsers};
+  S={v:3,meals:d.meals,plans:d.plans,checked:d.checked||{},ings:d.ings||[],users:d.users,cart:null,cartPhotos:{},activeUser:keepView?view.activeUser:me(),weekUsers:keepView?view.weekUsers:[me()]};
+  fixView();
+}
+function errToast(msg){ const now=Date.now(); if(now-C.errShown>8000){ C.errShown=now; toast(msg) } }
+
+async function pull(){
+  if(!shared()) return;
+  const sb=C.sb, hid=C.hid;
+  const r=await Promise.all([
+    sb.from('households').select('id,name,invite_code').eq('id',hid).maybeSingle(),
+    sb.from('members').select('user_id,display_name,color,role,joined_at').eq('household_id',hid).order('joined_at'),
+    sb.from('meals').select('id,data').eq('household_id',hid),
+    sb.from('favorites').select('meal_id,user_id').eq('household_id',hid),
+    sb.from('plans').select('user_id,plan').eq('household_id',hid),
+    sb.from('household_state').select('checked,ings').eq('household_id',hid).maybeSingle()]);
+  const bad=r.find(x=>x.error); if(bad) throw bad.error;
+  const [h,mem,ml,fv,pl,st]=r.map(x=>x.data);
+  if(!h||!mem.some(x=>x.user_id===me())){ await leftHousehold(); return }
+  C.household=h;
+  const fav={}; fv.forEach(f=>{(fav[f.meal_id]=fav[f.meal_id]||[]).push(f.user_id)});
+  const meals=ml.map(x=>({...x.data,id:x.id,favBy:fav[x.id]||[]})).sort((a,b)=>(a.ord??0)-(b.ord??0)||String(a.name).localeCompare(b.name));
+  const plans={}; pl.forEach(p=>{plans[p.user_id]=p.plan||{}});
+  applyShared({users:mem.map(m=>({id:m.user_id,name:m.display_name,color:m.color,role:m.role})),meals,plans,checked:st?.checked,ings:st?.ings},true);
+  C.base=canon(); cacheShared();
+  await signPhotos();
+  if(!rolling) render();
+}
+function schedulePull(delay){
+  clearTimeout(C.pullT);
+  C.pullT=setTimeout(async()=>{
+    if(rolling||C.busy){ schedulePull(800); return }
+    try{ if(C.base&&!sameCanon(canon(),C.base)) await push(); await pull(); C.offline=false }
+    catch(e){ C.offline=true }
+  },delay??500);
+}
+async function push(){
+  if(!shared()||!C.base) return;
+  if(C.busy){ C.dirty=true; return }
+  C.busy=true; C.dirty=false;
+  const sb=C.sb, hid=C.hid, now=canon(), b=C.base, t=new Date().toISOString();
+  try{
+    const up=[], del=[];
+    for(const id in now.meals) if(now.meals[id]!==b.meals[id]) up.push({household_id:hid,id,data:JSON.parse(now.meals[id]),updated_at:t});
+    for(const id in b.meals) if(!(id in now.meals)) del.push(id);
+    for(let i=0;i<up.length;i+=25){ const {error}=await sb.from('meals').upsert(up.slice(i,i+25)); if(error) throw error }
+    if(del.length){ const {error}=await sb.from('meals').delete().eq('household_id',hid).in('id',del); if(error) throw error }
+    const nf=new Set(now.favs), bf=new Set(b.favs);
+    const addF=[...nf].filter(x=>!bf.has(x)&&x.endsWith('|'+me())), remF=[...bf].filter(x=>!nf.has(x)&&x.endsWith('|'+me()));
+    if(addF.length){ const {error}=await sb.from('favorites').upsert(addF.map(x=>({household_id:hid,meal_id:x.split('|')[0],user_id:me()})),{onConflict:'household_id,meal_id,user_id',ignoreDuplicates:true}); if(error) throw error }
+    for(const x of remF){ const {error}=await sb.from('favorites').delete().eq('household_id',hid).eq('meal_id',x.split('|')[0]).eq('user_id',me()); if(error) throw error }
+    const pu=[]; for(const u in now.plans) if(now.plans[u]!==b.plans[u]&&S.users.some(x=>x.id===u)) pu.push({household_id:hid,user_id:u,plan:JSON.parse(now.plans[u]),updated_at:t});
+    if(pu.length){ const {error}=await sb.from('plans').upsert(pu); if(error) throw error }
+    if(now.state!==b.state){ const s=JSON.parse(now.state); const {error}=await sb.from('household_state').upsert({household_id:hid,checked:s.checked,ings:s.ings,updated_at:t}); if(error) throw error }
+    C.base=now; C.offline=false; cacheShared();
+  }catch(e){
+    C.offline=true; errToast(navigator.onLine===false?'You’re offline. Changes will sync when you’re back.':'Couldn’t save to your household. Trying again soon.');
+    clearTimeout(push.rt); push.rt=setTimeout(push,15000);
+  }finally{
+    C.busy=false; if(C.dirty) push();
+  }
+}
+function subscribe(){
+  if(C.chan){ try{C.sb.removeChannel(C.chan)}catch(e){} }
+  const ch=C.sb.channel('household-'+C.hid);
+  ['meals','favorites','plans','household_state','members'].forEach(t=>ch.on('postgres_changes',{event:'*',schema:'public',table:t,filter:'household_id=eq.'+C.hid},()=>schedulePull(400)));
+  ch.subscribe(); C.chan=ch;
+}
+/* photos in the household's private folder */
+async function signPhotos(){
+  const need=new Set();
+  S.meals.forEach(m=>mealPhotos(m).forEach(p=>{ if(p.u&&p.u.startsWith('sb:')&&!picURL[p.u]) need.add(p.u.slice(3)) }));
+  if(!need.size) return;
+  const paths=[...need];
+  for(let i=0;i<paths.length;i+=100){
+    const {data,error}=await C.sb.storage.from('photos').createSignedUrls(paths.slice(i,i+100),60*60*24*7);
+    if(!error&&data) data.forEach(x=>{ if(x.signedUrl&&x.path) picURL['sb:'+x.path]=x.signedUrl });
+  }
+}
+async function uploadPhoto(blob){
+  const path=`${C.hid}/${uid()}${Date.now().toString(36)}.jpg`;
+  const {error}=await C.sb.storage.from('photos').upload(path,blob,{contentType:'image/jpeg',upsert:false});
+  if(error) throw error;
+  const u='sb:'+path; picURL[u]=URL.createObjectURL(blob); return u;
+}
+async function pruneShared(){
+  try{
+    const used=new Set(); S.meals.forEach(m=>mealPhotos(m).forEach(p=>{ if(p.u&&p.u.startsWith('sb:')) used.add(p.u.slice(3)) }));
+    const {data,error}=await C.sb.storage.from('photos').list(C.hid,{limit:1000}); if(error||!data) return;
+    const old=Date.now()-15*60*1000;
+    const gone=data.filter(o=>o.name&&!used.has(C.hid+'/'+o.name)&&new Date(o.created_at||0).getTime()<old).map(o=>C.hid+'/'+o.name);
+    if(gone.length) await C.sb.storage.from('photos').remove(gone);
+  }catch(e){}
+}
+
+/* sign-in, joining and leaving */
+async function cloudInit(){
+  if(!window.supabase||!supabase.createClient) return;
+  C.sb=supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+  C.sb.auth.onAuthStateChange((ev,session)=>{
+    if(ev==='SIGNED_OUT'&&C.user) exitShared();
+    if(ev==='SIGNED_IN'&&session&&!C.user) setTimeout(()=>enterSignedIn(session.user),0);
+  });
+  let session=null; try{ session=(await C.sb.auth.getSession()).data.session }catch(e){}
+  if(session) await enterSignedIn(session.user);
+  else if(pendingJoin) joinSheet();
+  render();
+}
+async function enterSignedIn(user){
+  if(C.user&&C.user.id===user.id) return;
+  C.user=user;
+  let cache=null; try{ cache=JSON.parse(localStorage.getItem(CKEY)||'null') }catch(e){}
+  if(cache&&cache.uid===user.id&&cache.hid){ C.hid=cache.hid; C.household=cache.household; C.base=cache.base; applyShared(cache.S,false); S.activeUser=cache.S.activeUser||me(); S.weekUsers=cache.S.weekUsers||[me()]; fixView(); render() }
+  try{
+    const {data,error}=await C.sb.from('members').select('household_id,joined_at').eq('user_id',user.id).order('joined_at');
+    if(error) throw error;
+    const ids=(data||[]).map(x=>x.household_id);
+    if(!ids.length){ C.hid=null; render(); if(pendingJoin) joinSheet(); else setupSheet(); return }
+    if(!ids.includes(C.hid)){ C.hid=ids[0]; C.base=null; S.activeUser=me(); S.weekUsers=[me()] }
+    if(C.base&&!sameCanon(canon(),C.base)) await push();
+    await pull(); subscribe();
+    if(pendingJoin&&C.household&&C.household.invite_code!==pendingJoin) joinSheet();
+    else clearJoin();
+  }catch(e){ if(!C.hid) errToast('Couldn’t reach your household. Check your connection.') }
+}
+function clearJoin(){ pendingJoin=''; try{sessionStorage.removeItem('mp-join')}catch(e){} }
+async function leftHousehold(){
+  if(C.chan){ try{C.sb.removeChannel(C.chan)}catch(e){} C.chan=null }
+  C.hid=null; C.household=null; C.base=null; try{localStorage.removeItem(CKEY)}catch(e){}
+  S=readLocal()||migrate(normalize({})); render(); toast('You’re no longer in that household.');
+}
+function exitShared(){
+  if(C.chan){ try{C.sb.removeChannel(C.chan)}catch(e){} C.chan=null }
+  C.user=null; C.hid=null; C.household=null; C.base=null; try{localStorage.removeItem(CKEY)}catch(e){}
+  S=readLocal()||migrate(normalize({})); undoStack.length=0; render();
+}
+async function ensureSession(){
+  if(C.user) return true;
+  const {data,error}=await C.sb.auth.signInAnonymously();
+  if(error){ throw new Error(/anonymous/i.test(error.message)?'Joining without email is turned off in Supabase. Turn on anonymous sign-ins (Authentication → Sign In / Providers).':error.message) }
+  C.user=data.user; return true;
+}
+function localHasStuff(L){ if(!L) return false; return L.meals.some(m=>!m.rec)||L.meals.some(m=>(m.favBy||[]).length)||Object.values(L.plans||{}).some(p=>p&&Object.values(p).some(d=>d&&Object.keys(d).length)) }
+async function bringLocal(mode,onStep){
+  const L=readLocal(); if(!L) return;
+  const first=L.users[0]?.id, hid=C.hid;
+  const existing=new Set(S.meals.map(m=>m.id));
+  const list=L.meals.filter(m=>mode==='create'||!m.rec||!existing.has(m.id));
+  const rows=[]; let n=0;
+  for(const [i,m] of list.entries()){
+    const ps=[]; for(const p of mealPhotos(m)){ n++; onStep&&onStep(`Moving photos… ${n}`);
+      if(p.u&&p.u.startsWith('idb:')){ try{ const blob=await idbGet(p.u.slice(4)); if(blob) ps.push({u:await uploadPhoto(blob),r:p.r||0}) }catch(e){} }
+      else if(p.u&&!p.u.startsWith('blob:')) ps.push({u:p.u,r:p.r||0}) }
+    rows.push({household_id:hid,id:existing.has(m.id)&&!m.rec?m.id+'-'+uid().slice(0,4):m.id,data:{name:m.name,color:m.color,border:m.border||'',nut:m.nut||{},ingredients:m.ingredients||[],rec:!!m.rec,ord:i,imgs:ps,img:ps[0]?.u||'',ratio:ps[0]?.r||0}});
+  }
+  onStep&&onStep('Saving meals…');
+  for(let i=0;i<rows.length;i+=25){ const {error}=await C.sb.from('meals').upsert(rows.slice(i,i+25)); if(error) throw error }
+  const favRows=L.meals.filter(m=>first&&(m.favBy||[]).includes(first)).map(m=>({household_id:hid,meal_id:m.id,user_id:me()}));
+  if(favRows.length){ const {error}=await C.sb.from('favorites').upsert(favRows,{onConflict:'household_id,meal_id,user_id',ignoreDuplicates:true}); if(error) throw error }
+  const myPlan=first&&L.plans[first];
+  if(myPlan&&Object.keys(myPlan).length){ const {error}=await C.sb.from('plans').upsert({household_id:hid,user_id:me(),plan:myPlan}); if(error) throw error }
+  if(L.ings&&L.ings.length){ const ings=[...new Set([...(S.ings||[]),...L.ings])].slice(-400); await C.sb.from('household_state').upsert({household_id:hid,ings,checked:S.checked||{}}) }
+}
+async function seedRecs(){
+  const rows=RECS.map((r,i)=>({household_id:C.hid,id:r.id,data:{name:r.name,color:r.color,ingredients:[...r.ingredients],rec:true,ord:i,imgs:[],img:'',ratio:0,nut:{},border:''}}));
+  const {error}=await C.sb.from('meals').upsert(rows,{onConflict:'household_id,id',ignoreDuplicates:true}); if(error) throw error;
+}
+async function startHousehold(hid){
+  C.hid=hid; C.base=null; S.activeUser=me(); S.weekUsers=[me()];
+  await pull(); subscribe(); clearJoin();
+}
+const HCOLORS=['tomato','tangerine','mango','lime','teal','sky','grape','bubble'];
+
+function joinSheet(){ setupSheet('join') }
+function setupSheet(startTab){
+  const L=readLocal(), hasLocal=localHasStuff(L);
+  let tabMode=startTab||(pendingJoin?'join':'create');
+  const st={name:(L&&L.users[0]&&L.users[0].name!=='Me'?L.users[0].name:''),color:(L&&L.users[0]&&L.users[0].color)||'tomato',code:pendingJoin||'',hname:'',bring:hasLocal};
+  const draw=(msg,busy)=>`<h2>${tabMode==='join'?'Join a household':'Start a household'}</h2>
+    <p class="note" style="margin:0">${tabMode==='join'?'Enter the invite code someone shared with you. Everyone in the household sees the same meals, weeks and groceries.':'Make a shared space for your family. You’ll get an invite code to send them.'}</p>
+    <div class="subtabs" role="tablist"><button role="tab" data-hm="join" aria-selected="${tabMode==='join'}">Join with a code</button><button role="tab" data-hm="create" aria-selected="${tabMode==='create'}">Start new</button></div>
+    ${tabMode==='join'?`<label class="lbl" for="hcode">Invite code</label><input class="field" id="hcode" value="${esc(st.code)}" placeholder="e.g. 7F3A9C21" autocomplete="off" autocapitalize="characters" spellcheck="false" style="letter-spacing:.12em;font-weight:600">`
+      :`<label class="lbl" for="hname">Household name</label><input class="field" id="hname" value="${esc(st.hname)}" placeholder="e.g. Quinn kitchen" autocomplete="off">`}
+    <label class="lbl" for="pname">Your name</label><input class="field" id="pname" value="${esc(st.name)}" placeholder="e.g. Tim" autocomplete="given-name">
+    <span class="lbl">Your color</span><div class="swatches">${HCOLORS.map(c=>`<button type="button" data-hc="${c}" aria-label="${c}" aria-pressed="${st.color===c}" style="background:${col(c)}"></button>`).join('')}</div>
+    ${hasLocal?`<label class="checkrow"><input type="checkbox" id="bring" ${st.bring?'checked':''}> Bring my meals, favorites and week from this ${/iPhone|iPad|Android/i.test(navigator.userAgent)?'phone':'device'}</label>`:''}
+    ${msg?`<p class="note" role="status" style="margin:0;color:${busy?'var(--muted)':'#E5484D'}">${esc(msg)}</p>`:''}
+    <div class="foot"><button class="btn ghost" id="hcancel">Not now</button><button class="btn primary" id="hgo" ${busy?'disabled':''}>${tabMode==='join'?'Join household':'Create household'}</button></div>
+    ${C.user?'':`<p class="note" style="margin:0">No email or password needed. ${/iPhone|iPad/i.test(navigator.userAgent)&&!navigator.standalone?'<b>On iPhone, add Meal Pix to your Home Screen first</b>, then join from there, so you stay signed in.':'You stay signed in on this device.'} <button type="button" class="linkbtn" id="useemail">Sign in with email instead</button></p>`}`;
+  openSheet(draw(), sh=>{
+    const grab=()=>{ const q=id=>sh.querySelector(id); if(q('#hcode')) st.code=q('#hcode').value; if(q('#hname')) st.hname=q('#hname').value; st.name=q('#pname').value; const b=q('#bring'); if(b) st.bring=b.checked };
+    const redraw=(m,b)=>{ grab(); sh.innerHTML=draw(m,b) };
+    sh.addEventListener('click',async e=>{
+      const hm=e.target.closest('[data-hm]'); if(hm){ grab(); tabMode=hm.dataset.hm; sh.innerHTML=draw(); return }
+      const hc=e.target.closest('[data-hc]'); if(hc){ grab(); st.color=hc.dataset.hc; sh.innerHTML=draw(); return }
+      if(e.target.closest('#hcancel')){ closeSheet(); return }
+      if(e.target.closest('#useemail')){ emailSheet(); return }
+      if(!e.target.closest('#hgo')) return;
+      grab();
+      const name=st.name.trim(), code=st.code.trim().toUpperCase();
+      if(!name) return redraw('Add your name so others know who picked what.');
+      if(tabMode==='join'&&!/^[A-Z0-9]{6,12}$/.test(code)) return redraw('Enter the 8-character invite code.');
+      try{
+        redraw(tabMode==='join'?'Joining…':'Creating your household…',true);
+        await ensureSession();
+        let hid;
+        if(tabMode==='join'){ const {data,error}=await C.sb.rpc('join_household',{p_code:code,p_display_name:name,p_color:st.color}); if(error) throw error; hid=data }
+        else { const {data,error}=await C.sb.rpc('create_household',{p_name:st.hname.trim()||'Our kitchen',p_display_name:name,p_color:st.color}); if(error) throw error; hid=(Array.isArray(data)?data[0]:data).id }
+        C.hid=hid; await pull();
+        if(tabMode==='create') await seedRecs();
+        if(st.bring) await bringLocal(tabMode,m=>redraw(m,true));
+        await startHousehold(hid);
+        closeSheet(); toast(tabMode==='join'?`You joined ${C.household?.name||'the household'}`:'Household created. Tap + to invite people.');
+      }catch(err){
+        const m=String(err&&err.message||err);
+        redraw(/match a household/i.test(m)?'That invite code doesn’t match a household. Check it and try again.':/full/i.test(m)?'That household is full (8 people).':/anonymous/i.test(m)?m:'Something went wrong: '+m);
+      }
+    });
+  });
+}
+function emailSheet(){
+  let step='email', email='';
+  const draw=(msg,busy)=>step==='email'?`<h2>Sign in with email</h2>
+    <p class="note" style="margin:0">We’ll email you a code. Use this to get the same account on another device.</p>
+    <label class="lbl" for="em">Email</label><input class="field" id="em" type="email" inputmode="email" autocomplete="email" value="${esc(email)}" placeholder="you@example.com">
+    ${msg?`<p class="note" role="status" style="margin:0;color:${busy?'var(--muted)':'#E5484D'}">${esc(msg)}</p>`:''}
+    <div class="foot"><button class="btn ghost" id="eback">Back</button><button class="btn primary" id="esend" ${busy?'disabled':''}>Email me a code</button></div>`
+   :`<h2>Enter your code</h2>
+    <p class="note" style="margin:0">We sent a code to <b>${esc(email)}</b>. It can take a minute.</p>
+    <input class="field" id="otp" inputmode="numeric" autocomplete="one-time-code" placeholder="Code" style="letter-spacing:.2em;font-size:20px;font-weight:600;text-align:center">
+    ${msg?`<p class="note" role="status" style="margin:0;color:${busy?'var(--muted)':'#E5484D'}">${esc(msg)}</p>`:''}
+    <div class="foot"><button class="btn ghost" id="eagain">Use a different email</button><button class="btn primary" id="everify" ${busy?'disabled':''}>Sign in</button></div>`;
+  openSheet(draw(), sh=>{
+    sh.addEventListener('click',async e=>{
+      if(e.target.closest('#eback')){ setupSheet(); return }
+      if(e.target.closest('#eagain')){ step='email'; sh.innerHTML=draw(); return }
+      if(e.target.closest('#esend')){
+        email=sh.querySelector('#em').value.trim();
+        if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ sh.innerHTML=draw('Enter a valid email address.'); return }
+        sh.innerHTML=draw('Sending…',true);
+        const {error}=await C.sb.auth.signInWithOtp({email,options:{shouldCreateUser:true,emailRedirectTo:location.origin+location.pathname}});
+        if(error){ step='email'; sh.innerHTML=draw(/not authorized/i.test(error.message)?'Supabase’s free email sender only sends to your Supabase team. Join with an invite code instead.':/rate|limit/i.test(error.message)?'Too many emails for now. Try again in an hour, or join with a code.':error.message); return }
+        step='code'; sh.innerHTML=draw(); setTimeout(()=>sh.querySelector('#otp')?.focus(),60); return
+      }
+      if(e.target.closest('#everify')){
+        const token=(sh.querySelector('#otp').value||'').replace(/\D/g,'');
+        if(token.length<6){ sh.innerHTML=draw('Enter the code from the email.'); return }
+        sh.innerHTML=draw('Signing in…',true);
+        const {data,error}=await C.sb.auth.verifyOtp({email,token,type:'email'});
+        if(error){ sh.innerHTML=draw('That code didn’t work. Check it, or send a new one.'); return }
+        closeSheet(); await enterSignedIn(data.user);
+      }
+    });
+  });
+}
+function householdSheet(){
+  const h=C.household||{}, mine=S.users.find(u=>u.id===me())||{name:'',color:'tomato'}, owner=mine.role==='owner';
+  const link=`${location.origin}${location.pathname}#join=${h.invite_code||''}`;
+  let armed='';
+  const st={name:mine.name,color:mine.color};
+  const draw=msg=>`<h2>${esc(h.name||'Household')}</h2>
+    <div class="invite"><span class="lbl">Invite code</span><div class="code" id="icode">${esc(h.invite_code||'')}</div>
+      <div class="row"><button class="btn primary sm" id="ishare">Share invite</button><button class="btn sm" id="icopy">Copy code</button>${owner?'<button class="btn ghost sm" id="inew">New code</button>':''}</div>
+      <p class="note" style="margin:0">They open the link (or the app and tap Join), add their name, and they’re in. ${owner?'Make a new code to stop old invites from working.':''}</p></div>
+    <span class="lbl">People · ${S.users.length} of 8</span>
+    <div class="mlist">${S.users.map(u=>`<div class="mrow">${avatar(u,30)}<span class="mname">${esc(u.name)}${u.id===me()?' <span class="note">(you)</span>':''}${u.role==='owner'?' <span class="tag">Owner</span>':''}</span>${owner&&u.id!==me()?`<button class="btn ghost sm danger" data-rmm="${u.id}">${armed===u.id?'Tap again':'Remove'}</button>`:''}</div>`).join('')}</div>
+    <span class="lbl">Your name and color</span>
+    <div class="row" style="flex-wrap:nowrap"><input class="field" id="myname" value="${esc(st.name)}" style="flex:1;min-width:0" autocomplete="off"><button class="btn sm" id="mysave">Save</button></div>
+    <div class="swatches">${HCOLORS.map(c=>`<button type="button" data-myc="${c}" aria-label="${c}" aria-pressed="${st.color===c}" style="background:${col(c)}"></button>`).join('')}</div>
+    ${msg?`<p class="note" role="status" style="margin:0">${esc(msg)}</p>`:''}
+    <div class="dangerzone">
+      ${C.user&&C.user.email?`<p class="note" style="margin:0">Signed in as ${esc(C.user.email)}</p>`:`<p class="note" style="margin:0">Signed in on this device only. <button type="button" class="linkbtn" id="toemail">Sign in with email</button> to use another device.</p>`}
+      <div class="row">${C.user&&C.user.email?'<button class="btn ghost sm" id="signout">Sign out</button>':''}${owner?'':`<button class="btn ghost sm danger" id="leave">${armed==='leave'?'Tap again to leave':'Leave household'}</button>`}<button class="btn ghost sm danger" id="delacct">${armed==='del'?'Tap again to delete':'Delete my account'}</button></div>
+      <p class="note" style="margin:0">Deleting your account removes your name, favorites and week from the household. ${owner?'Ownership passes to the next person.':''}</p>
+    </div>`;
+  openSheet(draw(), sh=>{
+    const redraw=m=>{ st.name=sh.querySelector('#myname')?.value??st.name; sh.innerHTML=draw(m) };
+    sh.addEventListener('click',async e=>{
+      const q=s=>e.target.closest(s);
+      if(q('#icopy')||q('#ishare')){
+        if(q('#ishare')&&navigator.share){ try{ await navigator.share({title:'Join my Meal Pix household',text:`Join ${h.name||'my household'} on Meal Pix. Invite code: ${h.invite_code}`,url:link}); return }catch(x){ if(x&&x.name==='AbortError') return } }
+        try{ await navigator.clipboard.writeText(q('#icopy')?h.invite_code:link); toast(q('#icopy')?'Code copied':'Invite link copied') }catch(x){ const r=document.createRange(); r.selectNodeContents(sh.querySelector('#icode')); const s=getSelection(); s.removeAllRanges(); s.addRange(r) }
+        return
+      }
+      if(q('#inew')){ const {data,error}=await C.sb.rpc('new_invite_code',{hid:C.hid}); if(error) return redraw('Couldn’t make a new code. Try again.'); C.household={...h,invite_code:data}; h.invite_code=data; cacheShared(); redraw('New code ready. The old one no longer works.'); return }
+      const rm=q('[data-rmm]'); if(rm){ if(armed!==rm.dataset.rmm){ armed=rm.dataset.rmm; redraw(); return } const {error}=await C.sb.from('members').delete().eq('household_id',C.hid).eq('user_id',rm.dataset.rmm); armed=''; if(error) return redraw('Couldn’t remove them. Try again.'); await pull(); redraw('Removed.'); return }
+      const mc=q('[data-myc]'); if(mc){ st.name=sh.querySelector('#myname').value; st.color=mc.dataset.myc; sh.innerHTML=draw(); return }
+      if(q('#mysave')){ const name=sh.querySelector('#myname').value.trim(); if(!name) return redraw('Add a name.'); const {error}=await C.sb.from('members').update({display_name:name.slice(0,30),color:st.color}).eq('household_id',C.hid).eq('user_id',me()); if(error) return redraw('Couldn’t save. Try again.'); await pull(); st.name=name; redraw('Saved.'); return }
+      if(q('#toemail')){ emailSheet(); return }
+      if(q('#signout')){ await C.sb.auth.signOut(); exitShared(); closeSheet(); toast('Signed out'); return }
+      if(q('#leave')){ if(armed!=='leave'){ armed='leave'; redraw(); return } const {error}=await C.sb.from('members').delete().eq('household_id',C.hid).eq('user_id',me()); if(error) return redraw('Couldn’t leave. Try again.'); closeSheet(); await leftHousehold(); return }
+      if(q('#delacct')){ if(armed!=='del'){ armed='del'; redraw(); return }
+        try{
+          if(owner&&S.users.length===1){ const {data}=await C.sb.storage.from('photos').list(C.hid,{limit:1000}); if(data&&data.length) await C.sb.storage.from('photos').remove(data.map(o=>C.hid+'/'+o.name)) }
+          const {error}=await C.sb.rpc('delete_my_account'); if(error) throw error;
+          try{ await C.sb.auth.signOut({scope:'local'}) }catch(x){}
+          exitShared(); closeSheet(); toast('Your account was deleted');
+        }catch(x){ armed=''; redraw('Couldn’t delete your account. Try again.') }
+      }
+    });
+  });
+}
+window.addEventListener('online',()=>{ if(shared()) schedulePull(0) });
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&shared()) schedulePull(0) });
+setInterval(()=>{ if(shared()&&document.visibilityState==='visible') schedulePull(0) },90000);
+
 /* ---------- events ---------- */
 document.addEventListener('click',e=>{
   if(e.target.matches('[data-close]')||e.target.closest('[data-x]')){closeSheet();return}
@@ -1013,6 +1361,8 @@ document.addEventListener('click',e=>{
   if(a==='clearweek'){ const has=shownUsers().some(u=>Object.values(S.plans[u.id]||{}).some(x=>x&&Object.keys(x).length)); if(has){snap();shownUsers().forEach(u=>{S.plans[u.id]={}});render();save()} }
   if(a==='undo'&&undoStack.length){S.plans=JSON.parse(undoStack.pop());render();save()}
   if(a==='backup') backup();
+  if(a==='household') householdSheet();
+  if(a==='share'){ if(!C.sb) toast('Connect to the internet to share with family.'); else if(shared()) householdSheet(); else setupSheet(); }
   if(a==='people') peopleSheet();
   if(a==='addperson') peopleSheet(true);
   if(a==='sync') syncCart();
@@ -1026,6 +1376,7 @@ document.addEventListener('change',e=>{
 });
 render();
 loadPics().then(render);
+cloudInit().catch(()=>{});
 if('serviceWorker' in navigator&&location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
 try{ navigator.storage&&navigator.storage.persist&&navigator.storage.persist() }catch(e){}
 </script>

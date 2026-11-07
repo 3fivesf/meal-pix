@@ -1,5 +1,5 @@
 // Meal Pix offline support: serve saved copies, refresh them in the background.
-const CACHE = 'meal-pix-v1';
+const CACHE = 'meal-pix-v2';
 const CORE = ['./', './index.html', './manifest.webmanifest', './img/icon-180.png', './img/icon-192.png', './img/icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -12,7 +12,7 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  const ok = url.origin === location.origin || url.hostname.endsWith('fonts.googleapis.com') || url.hostname.endsWith('fonts.gstatic.com');
+  const ok = url.origin === location.origin || url.hostname.endsWith('fonts.googleapis.com') || url.hostname.endsWith('fonts.gstatic.com') || (url.hostname === 'cdn.jsdelivr.net' && url.pathname.startsWith('/npm/@supabase/'));
   if (!ok) return;
   e.respondWith(caches.open(CACHE).then(async cache => {
     const hit = await cache.match(req, { ignoreSearch: url.origin === location.origin });
