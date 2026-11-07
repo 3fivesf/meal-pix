@@ -1,0 +1,15 @@
+{
+  "name": "Meal Pix",
+  "short_name": "Meal Pix",
+  "description": "A colorful meal planner: save meals with photos, shuffle your week, and get a combined grocery list.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F4F5FA",
+  "theme_color": "#5B4BF0",
+  "icons": [
+    { "src": "img/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "img/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
