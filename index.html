@@ -1152,7 +1152,7 @@ async function enterSignedIn(user){
     if(!ids.length){ C.hid=null; render(); if(pendingJoin) joinSheet(); else setupSheet(); return }
     if(!ids.includes(C.hid)){ C.hid=ids[0]; C.base=null; S.activeUser=me(); S.weekUsers=[me()] }
     if(C.base&&!sameCanon(canon(),C.base)) await push();
-    await pull(); subscribe();
+    await pull(); await seedIfEmpty(); subscribe();
     if(pendingJoin&&C.household&&C.household.invite_code!==pendingJoin) joinSheet();
     else clearJoin();
   }catch(e){ if(!C.hid) errToast('Couldn’t reach your household. Check your connection.') }
@@ -1179,13 +1179,13 @@ async function bringLocal(mode,onStep){
   const L=readLocal(); if(!L) return;
   const first=L.users[0]?.id, hid=C.hid;
   const existing=new Set(S.meals.map(m=>m.id));
-  const list=L.meals.filter(m=>mode==='create'||!m.rec||!existing.has(m.id));
+  const list=L.meals.filter(m=>mode==='create'||!existing.has(m.id));
   const rows=[]; let n=0;
   for(const [i,m] of list.entries()){
     const ps=[]; for(const p of mealPhotos(m)){ n++; onStep&&onStep(`Moving photos… ${n}`);
       if(p.u&&p.u.startsWith('idb:')){ try{ const blob=await idbGet(p.u.slice(4)); if(blob) ps.push({u:await uploadPhoto(blob),r:p.r||0}) }catch(e){} }
       else if(p.u&&!p.u.startsWith('blob:')) ps.push({u:p.u,r:p.r||0}) }
-    rows.push({household_id:hid,id:existing.has(m.id)&&!m.rec?m.id+'-'+uid().slice(0,4):m.id,data:{name:m.name,color:m.color,border:m.border||'',nut:m.nut||{},ingredients:m.ingredients||[],rec:!!m.rec,ord:i,imgs:ps,img:ps[0]?.u||'',ratio:ps[0]?.r||0}});
+    rows.push({household_id:hid,id:m.id,data:{name:m.name,color:m.color,border:m.border||'',nut:m.nut||{},ingredients:m.ingredients||[],rec:!!m.rec,ord:i,imgs:ps,img:ps[0]?.u||'',ratio:ps[0]?.r||0}});
   }
   onStep&&onStep('Saving meals…');
   for(let i=0;i<rows.length;i+=25){ const {error}=await C.sb.from('meals').upsert(rows.slice(i,i+25)); if(error) throw error }
@@ -1201,8 +1201,9 @@ async function seedRecs(){
 }
 async function startHousehold(hid){
   C.hid=hid; C.base=null; S.activeUser=me(); S.weekUsers=[me()];
-  await pull(); subscribe(); clearJoin();
+  await pull(); await seedIfEmpty(); subscribe(); clearJoin();
 }
+async function seedIfEmpty(){ if(shared()&&C.household&&!S.meals.length){ try{ await seedRecs(); await pull() }catch(e){} } }
 const HCOLORS=['tomato','tangerine','mango','lime','teal','sky','grape','bubble'];
 
 function joinSheet(){ setupSheet('join') }
@@ -1246,6 +1247,7 @@ function setupSheet(startTab){
         await startHousehold(hid);
         closeSheet(); toast(tabMode==='join'?`You joined ${C.household?.name||'the household'}`:'Household created. Tap + to invite people.');
       }catch(err){
+        if(C.hid&&!C.household){ C.hid=null; C.base=null; S=readLocal()||S; render() }
         const m=String(err&&err.message||err);
         redraw(/match a household/i.test(m)?'That invite code doesn’t match a household. Check it and try again.':/full/i.test(m)?'That household is full (8 people).':/anonymous/i.test(m)?m:'Something went wrong: '+m);
       }
@@ -1292,7 +1294,7 @@ function householdSheet(){
   const link=`${location.origin}${location.pathname}#join=${h.invite_code||''}`;
   let armed='';
   const st={name:mine.name,color:mine.color};
-  const draw=msg=>`<h2>${esc(h.name||'Household')}</h2>
+  const draw=msg=>!C.household?`<h2>Household</h2><p class="note">Still connecting to your household. Check your internet connection, then close this and try again.</p>`:`<h2>${esc(h.name||'Household')}</h2>
     <div class="invite"><span class="lbl">Invite code</span><div class="code" id="icode">${esc(h.invite_code||'')}</div>
       <div class="row"><button class="btn primary sm" id="ishare">Share invite</button><button class="btn sm" id="icopy">Copy code</button>${owner?'<button class="btn ghost sm" id="inew">New code</button>':''}</div>
       <p class="note" style="margin:0">They open the link (or the app and tap Join), add their name, and they’re in. ${owner?'Make a new code to stop old invites from working.':''}</p></div>
@@ -1301,6 +1303,7 @@ function householdSheet(){
     <span class="lbl">Your name and color</span>
     <div class="row" style="flex-wrap:nowrap"><input class="field" id="myname" value="${esc(st.name)}" style="flex:1;min-width:0" autocomplete="off"><button class="btn sm" id="mysave">Save</button></div>
     <div class="swatches">${HCOLORS.map(c=>`<button type="button" data-myc="${c}" aria-label="${c}" aria-pressed="${st.color===c}" style="background:${col(c)}"></button>`).join('')}</div>
+    ${localHasStuff(readLocal())?`<div class="checkrow" style="justify-content:space-between;flex-wrap:wrap"><span>Meals saved on this device before you joined</span><button class="btn sm" id="bringnow">Add them here</button></div>`:''}
     ${msg?`<p class="note" role="status" style="margin:0">${esc(msg)}</p>`:''}
     <div class="dangerzone">
       ${C.user&&C.user.email?`<p class="note" style="margin:0">Signed in as ${esc(C.user.email)}</p>`:`<p class="note" style="margin:0">Signed in on this device only. <button type="button" class="linkbtn" id="toemail">Sign in with email</button> to use another device.</p>`}
@@ -1321,6 +1324,7 @@ function householdSheet(){
       const mc=q('[data-myc]'); if(mc){ st.name=sh.querySelector('#myname').value; st.color=mc.dataset.myc; sh.innerHTML=draw(); return }
       if(q('#mysave')){ const name=sh.querySelector('#myname').value.trim(); if(!name) return redraw('Add a name.'); const {error}=await C.sb.from('members').update({display_name:name.slice(0,30),color:st.color}).eq('household_id',C.hid).eq('user_id',me()); if(error) return redraw('Couldn’t save. Try again.'); await pull(); st.name=name; redraw('Saved.'); return }
       if(q('#toemail')){ emailSheet(); return }
+      if(q('#bringnow')){ try{ redraw('Adding your meals…'); await bringLocal('join',m=>redraw(m)); await pull(); redraw('Your meals were added to the household.') }catch(x){ redraw('Couldn’t add them. Try again.') } return }
       if(q('#signout')){ await C.sb.auth.signOut(); exitShared(); closeSheet(); toast('Signed out'); return }
       if(q('#leave')){ if(armed!=='leave'){ armed='leave'; redraw(); return } const {error}=await C.sb.from('members').delete().eq('household_id',C.hid).eq('user_id',me()); if(error) return redraw('Couldn’t leave. Try again.'); closeSheet(); await leftHousehold(); return }
       if(q('#delacct')){ if(armed!=='del'){ armed='del'; redraw(); return }

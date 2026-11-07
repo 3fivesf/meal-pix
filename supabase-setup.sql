@@ -59,6 +59,13 @@ create table if not exists public.household_state (
   updated_at   timestamptz not null default now()
 );
 
+-- ---------- Let signed-in people use the tables (the access rules below still decide what they see) ----------
+
+grant usage on schema public to authenticated;
+grant select, insert, update, delete on public.meals, public.favorites, public.plans, public.household_state to authenticated;
+grant select, update on public.households to authenticated;
+grant select, delete on public.members to authenticated;
+
 -- ---------- Who belongs where ----------
 
 create or replace function public.is_member(hid uuid)
