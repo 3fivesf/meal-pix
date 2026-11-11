@@ -219,6 +219,19 @@ button.tile:hover{background:var(--bg)}
 .xclose{position:absolute;top:-48px;right:max(12px, env(safe-area-inset-right, 0px));z-index:3;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:var(--surface);border:1px solid var(--line);color:var(--fg);box-shadow:0 2px 8px rgba(0,0,0,.08)}
 .xclose svg{width:18px;height:18px}
 
+.wkswitch{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px}
+.wkswitch button{padding:8px 6px;border-radius:999px;font-weight:600;font-size:14px;color:var(--muted)}
+.wkswitch button[aria-selected="true"]{background:var(--accent);color:#fff}
+.wkrange{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.wkrange b{font-family:var(--display);font-size:20px}
+.wkrange span{color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}
+.hweek{display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:20px;background:var(--surface);border:1px solid var(--line)}
+.hweek .btn{align-self:flex-start}
+.hday{display:grid;grid-template-columns:88px 1fr;gap:8px;align-items:start}
+.hday .hd{font-size:13px;font-weight:600;color:var(--muted);padding-top:6px}
+.hchips{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.hchip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px 5px 6px;border-radius:12px;font-size:13px;font-weight:600;color:var(--ink);max-width:100%}
+.hchip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tools{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:5px}
 .tool{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 4px;border-radius:13px;font-size:12px;font-weight:600;color:var(--fg);line-height:1.15;text-align:center}
 .tool svg{width:18px;height:18px}
@@ -386,6 +399,7 @@ function migrate(st){
   if(!st.plans||typeof st.plans!=='object') st.plans={};
   if(st.plan&&typeof st.plan==='object'&&Object.keys(st.plan).length&&!Object.keys(st.plans).length) st.plans[st.users[0].id]=st.plan;
   delete st.plan;
+  fixPlans(st.plans);
   st.weekUsers=(Array.isArray(st.weekUsers)?st.weekUsers:[]).filter(id=>st.users.some(u=>u.id===id));
   if(!st.weekUsers.length) st.weekUsers=[st.activeUser];
   return st;
@@ -400,6 +414,8 @@ let tmr, saving=false, again=false;
 const status=()=>{};
 let toastT; function toast(t){ let el=document.getElementById('toast'); if(!el){el=document.createElement('div');el.id='toast';el.className='toast';el.setAttribute('role','status');document.body.appendChild(el)} el.textContent=t; el.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),2200) }
 function save(){
+  try{ fixPlans(S.plans) }catch(e){}
+  if(typeof C!=='undefined') C.ver=(C.ver||0)+1;
   if(typeof shared==='function'&&shared()){ cacheShared(); clearTimeout(save.ct); save.ct=setTimeout(push,400); clearTimeout(save.pt); save.pt=setTimeout(pruneShared,6000); return }
   try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){ toast('Storage is full. Back up, then remove some photos.') }
   clearTimeout(save.pt); save.pt=setTimeout(prunePics,3000);
@@ -408,6 +424,26 @@ function save(){
 function flush(){}
 
 /* ---------- helpers ---------- */
+function isoDay(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` }
+function weekStart(off){ const n=new Date(); n.setHours(12,0,0,0); const m=new Date(n); m.setDate(n.getDate()-((n.getDay()+6)%7)+7*(off||0)); return m }
+function weekDays(off){ const m=weekStart(off); return DAYS.map((_,i)=>{const d=new Date(m); d.setDate(m.getDate()+i); return d}) }
+function weekKeys(off){ return weekDays(off).map(isoDay) }
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function weekRange(off){ const d=weekDays(off), a=d[0], b=d[6]; return a.getMonth()===b.getMonth()?`${MONTHS[a.getMonth()]} ${a.getDate()} – ${b.getDate()}`:`${MONTHS[a.getMonth()]} ${a.getDate()} – ${MONTHS[b.getMonth()]} ${b.getDate()}` }
+function dayLabel(key){ const [y,m,d]=key.split('-').map(Number); const dt=new Date(y,m-1,d,12); return `${DAYS[(dt.getDay()+6)%7]} ${MONTHS[m-1]} ${d}` }
+let weekOffset=0, weekView='plan';
+const HISTORY_WEEKS=4;
+/* older versions stored days as 0–6; move them onto this week's dates, and keep about a month of history */
+function fixPlans(plans){
+  const keys=weekKeys(0), oldest=weekKeys(-4)[0];
+  for(const u in plans){ const p=plans[u]; if(!p||typeof p!=='object'){ plans[u]={}; continue }
+    for(const k of Object.keys(p)){
+      if(/^[0-6]$/.test(k)){ const nk=keys[+k]; if(!p[nk]||!Object.keys(p[nk]).length) p[nk]=p[k]; delete p[k] }
+      else if(/^\d{4}-\d{2}-\d{2}$/.test(k)){ if(k<oldest||!p[k]||!Object.keys(p[k]).length) delete p[k] }
+      else delete p[k];
+    } }
+  return plans;
+}
 function weekDates(){
   const now=new Date(); const dow=(now.getDay()+6)%7;
   const mon=new Date(now); mon.setDate(now.getDate()-dow);
@@ -416,8 +452,8 @@ function weekDates(){
 const getSlot=(d,s,u=S.activeUser)=>S.plans[u]?.[d]?.[s]||null;
 function setSlot(d,s,id,u=S.activeUser){ const p=S.plans[u]=S.plans[u]||{}; p[d]={...(p[d]||{})}; if(id) p[d][s]=id; else delete p[d][s]; }
 const shownUsers=()=>S.users.filter(u=>S.weekUsers.includes(u.id));
-function eachPick(fn){ shownUsers().forEach(u=>{ const p=S.plans[u.id]||{}; for(const d in p) for(const s in p[d]){ const m=meal(p[d][s]); if(m) fn(m,+d,s,u) } }) }
-function usedCount(id){let n=0; eachPick(m=>{if(m.id===id) n++}); return n}
+function eachPick(fn,off){ const keys=weekKeys(off??weekOffset); shownUsers().forEach(u=>{ const p=S.plans[u.id]||{}; for(const d of keys) for(const s in (p[d]||{})){ const m=meal(p[d][s]); if(m) fn(m,d,s,u) } }) }
+function usedCount(id){let n=0; eachPick(m=>{if(m.id===id) n++},0); return n}
 function shuffled(a){a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]} return a}
 const userById=id=>S.users.find(u=>u.id===id);
 const favOf=(m,u)=>(m.favBy||[]).includes(u);
@@ -536,10 +572,16 @@ function emptyHTML(){
   <div class="bar"><button class="btn primary" data-act="new">${ICON.plus}Add a meal</button>
   <button class="btn" data-mtab="recommended">Browse recommended</button></div></div>`;
 }
+function weekSwitch(){
+  return `<div class="wkswitch" role="tablist" aria-label="Which week">${[['0','This week'],['1','Next week'],['history','History']].map(([k,l])=>`<button role="tab" data-wk="${k}" aria-selected="${k==='history'?weekView==='history':(weekView==='plan'&&String(weekOffset)===k)}">${l}</button>`).join('')}</div>`;
+}
 function weekHTML(){
   if(!S.meals.length) return emptyHTML();
-  const {today,dates}=weekDates();
+  if(weekView==='history') return historyHTML();
+  const keys=weekKeys(weekOffset), todayKey=isoDay(new Date());
   let h=`<div style="display:flex;flex-direction:column;gap:14px">
+  ${weekSwitch()}
+  <div class="wkrange"><b>${weekOffset?'Next week':'This week'}</b><span>${weekRange(weekOffset)}</span></div>
   <div class="tools">
     <button class="tool green" data-act="reroll">${ICON.dice}<span>Random roll</span></button>
     <button class="tool primary" data-act="fill">${ICON.shuffle}<span>Shuffle empty</span></button>
@@ -548,21 +590,39 @@ function weekHTML(){
   </div>
   ${S.users.length>1?`<div class="picks"><span class="lbl">Picks from</span><div class="people sm" role="group" aria-label="Whose picks to use">${S.users.map(u=>`<button type="button" data-wuser="${u.id}" aria-pressed="${S.weekUsers.includes(u.id)}">${avatar(u)}<span>${esc(u.name)}</span></button>`).join('')}</div></div>`:''}
   <p class="note">${S.users.length>1?(shownUsers().length>1?`Showing ${esc(names(S.weekUsers))}’s picks side by side. Shuffle fills each person’s week from their own favorites.`:`Showing ${esc(names(S.weekUsers))}’s week. Shuffle uses their favorites.`):(favs().length?`Shuffle picks from your favorites (${favs().length} meal${favs().length===1?'':'s'}).`:'You haven’t saved favorites yet, so shuffle picks from all meals.')}</p><div class="week">`;
-  DAYS.forEach((d,i)=>{
-    h+=`<div class="day${i===today?' today':''}"><div class="dlabel">${d}<small>${dates[i]}</small></div>`;
+  keys.forEach((k,i)=>{
+    const dt=weekDays(weekOffset)[i];
+    h+=`<div class="day${k===todayKey?' today':''}"><div class="dlabel">${DAYS[i]}<small>${dt.getDate()}</small></div>`;
     const su=shownUsers();
     for(const [s,label] of SLOTS){
-      if(su.length===1){ const u=su[0].id, m=meal(getSlot(i,s,u));
-        h+=m?`<button class="slot full${m.img?' withimg':''}" data-slot="${i}-${s}-${u}" style="${cardStyle(m)}">${m.img?`<img class="sthumb" src="${esc(pic(m.img))}" alt="">`:''}<span class="sx"><span class="k">${label}</span><span class="n">${esc(m.name)}</span></span></button>`
-            :`<button class="slot empty" data-slot="${i}-${s}-${u}"><span class="k">${label}</span><span class="n">+ Pick</span></button>`;
+      if(su.length===1){ const u=su[0].id, m=meal(getSlot(k,s,u));
+        h+=m?`<button class="slot full${m.img?' withimg':''}" data-slot="${k}|${s}|${u}" style="${cardStyle(m)}">${m.img?`<img class="sthumb" src="${esc(pic(m.img))}" alt="">`:''}<span class="sx"><span class="k">${label}</span><span class="n">${esc(m.name)}</span></span></button>`
+            :`<button class="slot empty" data-slot="${k}|${s}|${u}"><span class="k">${label}</span><span class="n">+ Pick</span></button>`;
       } else {
-        h+=`<div class="slotgroup"><span class="k">${label}</span>${su.map(u=>{const m=meal(getSlot(i,s,u.id));
-          return `<button class="mini${m?' full':' empty'}" data-slot="${i}-${s}-${u.id}" ${m?`style="${cardStyle(m)}"`:''} aria-label="${esc(u.name)} ${label}">${avatar(u,20)}<span class="n">${m?esc(m.name):'+ Pick'}</span></button>`}).join('')}</div>`;
+        h+=`<div class="slotgroup"><span class="k">${label}</span>${su.map(u=>{const m=meal(getSlot(k,s,u.id));
+          return `<button class="mini${m?' full':' empty'}" data-slot="${k}|${s}|${u.id}" ${m?`style="${cardStyle(m)}"`:''} aria-label="${esc(u.name)} ${label}">${avatar(u,20)}<span class="n">${m?esc(m.name):'+ Pick'}</span></button>`}).join('')}</div>`;
       }
     }
     h+='</div>';
   });
   return h+'</div></div>';
+}
+function historyHTML(){
+  let body='';
+  for(let off=-1;off>=-HISTORY_WEEKS;off--){
+    const keys=weekKeys(off); let rows='';
+    keys.forEach(k=>{
+      const chips=[];
+      for(const [s,label] of SLOTS) shownUsers().forEach(u=>{ const m=meal(getSlot(k,s,u.id)); if(m) chips.push(`<button class="hchip" data-open="${m.id}" style="${cardStyle(m)}">${S.users.length>1?avatar(u,18):''}<span>${label[0]} · ${esc(m.name)}</span></button>`) });
+      if(chips.length) rows+=`<div class="hday"><span class="hd">${esc(dayLabel(k))}</span><div class="hchips">${chips.join('')}</div></div>`;
+    });
+    body+=`<section class="hweek"><div class="wkrange"><b>${off===-1?'Last week':`${-off} weeks ago`}</b><span>${weekRange(off)}</span></div>
+      ${rows||'<p class="note" style="margin:0">Nothing was planned this week.</p>'}
+      ${rows?`<button class="btn sm" data-repeat="${off}">Repeat for next week</button>`:''}</section>`;
+  }
+  return `<div style="display:flex;flex-direction:column;gap:14px">${weekSwitch()}
+    ${S.users.length>1?`<div class="picks"><span class="lbl">Showing</span><div class="people sm" role="group">${S.users.map(u=>`<button type="button" data-wuser="${u.id}" aria-pressed="${S.weekUsers.includes(u.id)}">${avatar(u)}<span>${esc(u.name)}</span></button>`).join('')}</div></div>`:''}
+    <p class="note" style="margin:0">The last ${HISTORY_WEEKS} weeks of picks. Tap a meal to see it.</p>${body}</div>`;
 }
 const HEART=on=>`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z" fill="${on?'currentColor':'none'}" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>`;
 const coverage=m=>S.cart?.items?.length?m.ingredients.filter(x=>inCart(x)).length:null;
@@ -627,12 +687,13 @@ function groceries(){
 }
 function listHTML(){
   const items=groceries();
-  if(!items.length) return `<div style="display:flex;flex-direction:column;gap:12px"><div class="empty-state"><h2>Nothing to buy yet</h2><p>Plan a few meals on the Week tab and their ingredients show up here, combined.</p><div class="bar"><button class="btn primary" data-goto="week">Go to Week</button></div></div>${cartHTML()}</div>`;
+  if(!items.length) return `<div style="display:flex;flex-direction:column;gap:12px"><div class="wkswitch" role="tablist" aria-label="Which week">${[['0','This week'],['1','Next week']].map(([k,l])=>`<button role="tab" data-gwk="${k}" aria-selected="${String(weekOffset)===k}">${l}</button>`).join('')}</div><div class="empty-state"><h2>Nothing to buy yet</h2><p>Plan meals for ${weekOffset?'next':'this'} week on the Week tab and their ingredients show up here, combined.</p><div class="bar"><button class="btn primary" data-goto="week">Go to Week</button></div></div>${cartHTML()}</div>`;
   const left=items.filter(i=>!i.done).length;
   items.forEach(i=>i.hit=inCart(i.name));
   const covered=items.filter(i=>i.hit).length;
   return `<div style="display:flex;flex-direction:column;gap:12px">
-  <div class="foot"><p class="note">${left} of ${items.length} left${S.cart?` · ${covered} already in your cart`:''} · ×2 means two meals use it</p><button class="btn ghost" data-act="uncheck">Uncheck all</button></div>
+  <div class="wkswitch" role="tablist" aria-label="Which week">${[['0','This week'],['1','Next week']].map(([k,l])=>`<button role="tab" data-gwk="${k}" aria-selected="${String(weekOffset)===k}">${l}</button>`).join('')}</div>
+  <div class="foot"><p class="note">${weekRange(weekOffset)} · ${left} of ${items.length} left${S.cart?` · ${covered} already in your cart`:''} · ×2 means two meals use it</p><button class="btn ghost" data-act="uncheck">Uncheck all</button></div>
   <div class="list">${items.map((it,ix)=>`<div class="item${it.done?' done':''}"><input type="checkbox" id="g${ix}" data-check="${esc(it.k)}" ${it.done?'checked':''}>${it.hit&&photoOf(it.hit.name)?`<img class="pic" src="${photoOf(it.hit.name)}" alt="">`:''}
   <button class="open" data-gitem="${esc(it.k)}" aria-label="Details for ${esc(it.name)}"><span style="display:block;font-weight:500">${esc(it.name)}</span>${it.hit?`<span class="sub">${esc(it.hit.name)}</span>`:''}</button>${it.hit?'<span class="tag">In cart</span>':''}<span class="from">${[...it.colors].map(c=>`<i style="background:${col(c)}"></i>`).join('')}</span>
   ${it.n>1?`<span class="ct">×${it.n}</span>`:''}</div>`).join('')}</div>${cartHTML()}</div>`;
@@ -640,7 +701,7 @@ function listHTML(){
 
 function plannedUses(test){
   const out=[];
-  shownUsers().forEach(u=>DAYS.forEach((d,i)=>SLOTS.forEach(([s,l])=>{const m=meal(getSlot(i,s,u.id)); if(m&&m.ingredients.some(test)) out.push(`${shownUsers().length>1?u.name+' · ':''}${d} ${l.toLowerCase()} · ${m.name}`)})));
+  shownUsers().forEach(u=>weekKeys(weekOffset).forEach(k=>SLOTS.forEach(([s,l])=>{const m=meal(getSlot(k,s,u.id)); if(m&&m.ingredients.some(test)) out.push(`${shownUsers().length>1?u.name+' · ':''}${dayLabel(k)} ${l.toLowerCase()} · ${m.name}`)})));
   return out;
 }
 function cartItemSheet(name){
@@ -706,7 +767,7 @@ const undoStack=[];
 function snap(){ undoStack.push(JSON.stringify(S.plans)); if(undoStack.length>40) undoStack.shift(); }
 async function shuffleSlots(all){
   if(rolling||!S.meals.length) return;
-  const targets=[]; shownUsers().forEach(u=>DAYS.forEach((_,i)=>SLOTS.forEach(([s])=>{ if(all||!getSlot(i,s,u.id)) targets.push([i,s,u.id]) })));
+  const targets=[]; shownUsers().forEach(u=>weekKeys(weekOffset).forEach(k=>SLOTS.forEach(([s])=>{ if(all||!getSlot(k,s,u.id)) targets.push([k,s,u.id]) })));
   if(!targets.length){toast('Every slot is filled. Try Random roll.');return}
   // even spread: cycle a shuffled deck so repeats happen only when needed
   const decks={}; const results=targets.map(([,,u])=>{ if(!decks[u]?.length) decks[u]=shuffled(userPool(u)); return decks[u].pop().id });
@@ -714,7 +775,7 @@ async function shuffleSlots(all){
   rolling=true;
   if(!reduce){
     render();
-    const els=targets.map(([i,s,u])=>document.querySelector(`[data-slot="${i}-${s}-${u}"]`)).filter(Boolean);
+    const els=targets.map(([k,s,u])=>document.querySelector(`[data-slot="${k}|${s}|${u}"]`)).filter(Boolean);
     els.forEach(el=>{el.classList.add('rolling','full');el.classList.remove('empty')});
     const t0=performance.now();
     await new Promise(res=>{
@@ -742,8 +803,8 @@ const closeSheet=()=>{$('#sheetRoot').innerHTML=''};
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
 
 function pickSheet(d,s,u){
-  let pu=u||S.activeUser; const label=SLOTS.find(x=>x[0]===s)[1];
-  openSheet(`<h2>${DAYS[d]} · ${label}</h2>
+  let pu=(u&&S.users.some(x=>x.id===u))?u:(shared()?me():S.activeUser); const label=SLOTS.find(x=>x[0]===s)[1];
+  openSheet(`<h2>${esc(dayLabel(d))} · ${label}</h2>
     ${S.users.length>1?`<div class="picks"><span class="lbl">Picking for</span><div class="people sm" id="pfor">${S.users.map(x=>`<button type="button" data-pfor="${x.id}" aria-pressed="${x.id===pu}">${avatar(x)}<span>${esc(x.name)}</span></button>`).join('')}</div></div>`:''}
     <div class="row"><button class="btn primary" id="surprise">${ICON.dice}Surprise me</button><button class="btn ghost" id="clr">Clear slot</button></div>
     <input class="field" id="q" placeholder="Search meals" autocomplete="off">
@@ -766,7 +827,7 @@ function pickSheet(d,s,u){
   });
 }
 function showUser(u){ if(!S.weekUsers.includes(u)) S.weekUsers=[...S.weekUsers,u] }
-function flash(d,s,u){ if(reduce) return; const el=document.querySelector(`[data-slot="${d}-${s}-${u}"]`); el?.animate([{transform:'scale(.85)'},{transform:'scale(1.05)'},{transform:'scale(1)'}],{duration:320,easing:'ease-out'}) }
+function flash(d,s,u){ if(reduce) return; const el=document.querySelector(`[data-slot="${d}|${s}|${u}"]`); el?.animate([{transform:'scale(.85)'},{transform:'scale(1.05)'},{transform:'scale(1)'}],{duration:320,easing:'ease-out'}) }
 
 /* photos live in this browser's IndexedDB; meals point at them as "idb:<id>" */
 const IDB_NAME='meal-pix', IDB_STORE='photos';
@@ -1040,7 +1101,7 @@ function errToast(msg){ const now=Date.now(); if(now-C.errShown>8000){ C.errShow
 
 async function pull(){
   if(!shared()) return;
-  const sb=C.sb, hid=C.hid;
+  const sb=C.sb, hid=C.hid, v0=C.ver||0;
   const r=await Promise.all([
     sb.from('households').select('id,name,invite_code').eq('id',hid).maybeSingle(),
     sb.from('members').select('user_id,display_name,color,role,joined_at').eq('household_id',hid).order('joined_at'),
@@ -1052,9 +1113,10 @@ async function pull(){
   const [h,mem,ml,fv,pl,st]=r.map(x=>x.data);
   if(!h||!mem.some(x=>x.user_id===me())){ await leftHousehold(); return }
   C.household=h;
+  if((C.ver||0)!==v0||C.busy||(C.base&&!sameCanon(canon(),C.base))){ if(!C.offline) schedulePull(600); return }
   const fav={}; fv.forEach(f=>{(fav[f.meal_id]=fav[f.meal_id]||[]).push(f.user_id)});
   const meals=ml.map(x=>({...x.data,id:x.id,favBy:fav[x.id]||[]})).sort((a,b)=>(a.ord??0)-(b.ord??0)||String(a.name).localeCompare(b.name));
-  const plans={}; pl.forEach(p=>{plans[p.user_id]=p.plan||{}});
+  const plans={}; pl.forEach(p=>{plans[p.user_id]=JSON.parse(JSON.stringify(p.plan||{}))}); fixPlans(plans);
   applyShared({users:mem.map(m=>({id:m.user_id,name:m.display_name,color:m.color,role:m.role})),meals,plans,checked:st?.checked,ings:st?.ings},true);
   C.base=canon(); cacheShared();
   await signPhotos();
@@ -1348,9 +1410,14 @@ document.addEventListener('click',e=>{
   const t=e.target.closest('[data-tab]'); if(t){tab=t.dataset.tab;render();return}
   const g=e.target.closest('[data-goto]'); if(g){tab=g.dataset.goto;render();return}
   if(e.target.closest('#sheetRoot')) return;
-  const sl=e.target.closest('[data-slot]'); if(sl&&!rolling){const [d,s,u]=sl.dataset.slot.split('-');pickSheet(+d,s,u);return}
+  const sl=e.target.closest('[data-slot]'); if(sl&&!rolling){const [d,s,u]=sl.dataset.slot.split('|');pickSheet(d,s,u||undefined);return}
   const au=e.target.closest('[data-auser]'); if(au){S.activeUser=au.dataset.auser;render();save();return}
   const wu=e.target.closest('[data-wuser]'); if(wu){const id=wu.dataset.wuser; const on=S.weekUsers.includes(id); if(on&&S.weekUsers.length===1){toast('Keep at least one person’s picks on');return} S.weekUsers=on?S.weekUsers.filter(x=>x!==id):[...S.weekUsers,id];render();save();return}
+  const wk=e.target.closest('[data-wk]'); if(wk){ if(wk.dataset.wk==='history') weekView='history'; else { weekView='plan'; weekOffset=+wk.dataset.wk } render(); return }
+  const gwk=e.target.closest('[data-gwk]'); if(gwk){ weekOffset=+gwk.dataset.gwk; render(); return }
+  const rp=e.target.closest('[data-repeat]'); if(rp){ const from=weekKeys(+rp.dataset.repeat), to=weekKeys(1); snap();
+    shownUsers().forEach(u=>{ const p=S.plans[u.id]=S.plans[u.id]||{}; from.forEach((k,i)=>{ if(p[k]&&Object.keys(p[k]).length) p[to[i]]={...p[k]} }) });
+    weekView='plan'; weekOffset=1; render(); save(); toast('Copied to next week'); return }
   const mt=e.target.closest('[data-mtab]'); if(mt){mealsTab=mt.dataset.mtab;tab='meals';render();return}
   const fv=e.target.closest('[data-fav]'); if(fv){const m=meal(fv.dataset.fav); if(m){toggleFav(m); render(); save()} return}
   const ci=e.target.closest('[data-citem]'); if(ci){cartItemSheet(ci.dataset.citem);return}
@@ -1362,7 +1429,7 @@ document.addEventListener('click',e=>{
   if(a==='starters'){STARTERS.forEach(([name,color,ingredients])=>S.meals.push({id:uid(),name,color,ingredients}));render();save()}
   if(a==='fill') shuffleSlots(false);
   if(a==='reroll') shuffleSlots(true);
-  if(a==='clearweek'){ const has=shownUsers().some(u=>Object.values(S.plans[u.id]||{}).some(x=>x&&Object.keys(x).length)); if(has){snap();shownUsers().forEach(u=>{S.plans[u.id]={}});render();save()} }
+  if(a==='clearweek'){ const has=shownUsers().some(u=>weekKeys(weekOffset).some(k=>{const x=(S.plans[u.id]||{})[k]; return x&&Object.keys(x).length})); if(has){snap();shownUsers().forEach(u=>{const p=S.plans[u.id]||{}; weekKeys(weekOffset).forEach(k=>delete p[k]); S.plans[u.id]=p});render();save()} }
   if(a==='undo'&&undoStack.length){S.plans=JSON.parse(undoStack.pop());render();save()}
   if(a==='backup') backup();
   if(a==='household') householdSheet();
