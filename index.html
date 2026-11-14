@@ -71,6 +71,12 @@ h1 .dots i{width:10px;height:10px;border-radius:50%;display:block}
 .dlabel{display:flex;flex-direction:column;justify-content:center;font-family:var(--display);font-weight:600;line-height:1.1}
 .dlabel small{font-family:var(--body);font-weight:500;font-size:12px;color:var(--muted)}
 .day.today .dlabel{color:var(--accent)}
+.addx{margin-top:6px;width:24px;height:24px;border-radius:50%;border:1.5px dashed var(--line);color:var(--muted);font-family:var(--body);font-size:15px;font-weight:600;line-height:1;display:grid;place-items:center;padding:0}
+.addx:hover{border-color:var(--accent);color:var(--accent)}
+.xrow{grid-column:2/-1;display:flex;flex-wrap:wrap;gap:6px;margin-top:-2px}
+.xchip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:12px;font-size:12.5px;color:var(--ink);max-width:100%;min-width:0}
+.xchip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.xchip b{font-weight:700}
 .slot{min-height:58px;border-radius:var(--r);padding:8px 12px;text-align:left;display:flex;flex-direction:column;justify-content:center;min-width:0;transition:transform .12s}
 .slot:active{transform:scale(.97)}
 .slot .k{font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;opacity:.7}
@@ -137,6 +143,7 @@ h1 .dots i{width:10px;height:10px;border-radius:50%;display:block}
 .subtabs button{padding:8px 14px;border-radius:999px;font-weight:600;font-size:14px;border:1.5px solid var(--line);color:var(--muted);background:var(--surface)}
 .subtabs button[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
 .subtabs .n{opacity:.7;margin-left:4px;font-variant-numeric:tabular-nums}
+.card .chip2.newr{background:rgba(255,255,255,.75);color:var(--ink)}
 .card .chip2.hot{background:var(--sprout);color:#fff}
 .card .chip2{align-self:flex-start;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:rgba(255,255,255,.6);color:var(--ink);border-radius:999px;padding:2px 8px}
 .ingl{display:flex;flex-direction:column;gap:2px;margin:0;padding:0;list-style:none}
@@ -335,23 +342,89 @@ const COLORS=['tomato','mango','lime','sky','grape','bubble','teal','cherry','co
 const SWATCH_ORDER=['cherry','tomato','coral','tangerine','peach','mango','butter','lemon','pistachio','lime','sage','mint','teal','aqua','sky','cornflower','periwinkle','lavender','grape','orchid','bubble','rose','blush','sand','clay','cloud','stone'];
 const DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const SLOTS=[['l','Lunch'],['d','Dinner']];
+const EXTRAS=[['b','Breakfast'],['n','Snack'],['x','Dessert'],['p','Special']];
+const ALLSLOTS=[...SLOTS,...EXTRAS];
+const slotName=k=>(ALLSLOTS.find(x=>x[0]===k)||['',''])[1];
 const KEY='meal-pix-v1';
-const RECS=[
-  ['Enchiladas verdes','lime',['Tomatillos','Serrano chiles','Cilantro','Yellow onion','Tortillas','Jack cheese','Chicken breast','Garlic powder']],
-  ['Chilaquiles verdes','teal',['Tortilla chips','Tomatillos','Serrano chiles','Eggs','Cilantro','Red onion','Jack cheese']],
-  ['Black bean tacos','tomato',['Black beans','Tortillas','Red onion','Cilantro','Jack cheese','Lime','Salsa']],
-  ['Green chile quesadillas','mango',['Tortillas','Jack cheese','Green chiles','Green onions','Salsa']],
-  ['Huevos rancheros','bubble',['Eggs','Tortillas','Black beans','Salsa','Cilantro','Jack cheese']],
-  ['Zucchini black bean skillet','lime',['Zucchini','Black beans','Yellow onion','Garlic powder','Green chiles','Jack cheese']],
-  ['Burrata gnocchi & zucchini','grape',['Burrata gnocchi','Zucchini','Garlic','Olive oil','Parmesan']],
-  ['Street tacos','tomato',['Tortillas','Ground beef','Onion','Cilantro','Lime','Salsa']],
-  ['Breakfast burritos','grape',['Tortillas','Eggs','Potatoes','Cheddar','Salsa']],
-  ['Chicken stir-fry','mango',['Chicken breast','Bell pepper','Broccoli','Soy sauce','Garlic','Rice']],
-  ['Pasta pomodoro','bubble',['Spaghetti','Canned tomatoes','Garlic','Basil','Parmesan']],
-  ['Salmon rice bowl','sky',['Salmon','Rice','Cucumber','Avocado','Soy sauce']],
-  ['Veggie curry','lime',['Chickpeas','Coconut milk','Curry paste','Spinach','Onion','Rice']],
-  ['Turkey club wraps','teal',['Tortillas','Turkey','Bacon','Lettuce','Tomato']],
-].map(([name,color,ingredients],i)=>({id:'rec'+i,name,color,ingredients,rec:true}));
+/* recommended meals: a pool of 50, 8 shown at a time, a new set every other Monday */
+const REC_POOL=[
+  ['Enchiladas verdes','lime','any',['Tomatillos','Serrano chiles','Cilantro','Yellow onion','Tortillas','Jack cheese','Chicken breast','Garlic powder']],
+  ['Chilaquiles verdes','teal','any',['Tortilla chips','Tomatillos','Serrano chiles','Eggs','Cilantro','Red onion','Jack cheese']],
+  ['Black bean tacos','tomato','any',['Black beans','Tortillas','Red onion','Cilantro','Jack cheese','Lime','Salsa']],
+  ['Green chile quesadillas','mango','any',['Tortillas','Jack cheese','Green chiles','Green onions','Salsa']],
+  ['Huevos rancheros','bubble','any',['Eggs','Tortillas','Black beans','Salsa','Cilantro','Jack cheese']],
+  ['Zucchini black bean skillet','lime','any',['Zucchini','Black beans','Yellow onion','Garlic powder','Green chiles','Jack cheese']],
+  ['Burrata gnocchi & zucchini','grape','any',['Burrata gnocchi','Zucchini','Garlic','Olive oil','Parmesan']],
+  ['Street tacos','tomato','any',['Tortillas','Ground beef','Onion','Cilantro','Lime','Salsa']],
+  ['Breakfast burritos','grape','any',['Tortillas','Eggs','Potatoes','Cheddar','Salsa']],
+  ['Chicken stir-fry','mango','any',['Chicken breast','Bell pepper','Broccoli','Soy sauce','Garlic','Rice']],
+  ['Pasta pomodoro','bubble','any',['Spaghetti','Canned tomatoes','Garlic','Basil','Parmesan']],
+  ['Salmon rice bowl','sky','any',['Salmon','Rice','Cucumber','Avocado','Soy sauce']],
+  ['Veggie curry','lime','cool',['Chickpeas','Coconut milk','Curry paste','Spinach','Onion','Rice']],
+  ['Turkey club wraps','teal','any',['Tortillas','Turkey','Bacon','Lettuce','Tomato']],
+  ['Turkey chili','tomato','cool',['Ground turkey','Kidney beans','Canned tomatoes','Onion','Bell pepper','Chili powder','Garlic']],
+  ['Chicken tortilla soup','mango','cool',['Chicken breast','Chicken broth','Black beans','Corn','Tomatoes','Tortilla chips','Lime','Cilantro']],
+  ['Sheet-pan sausage & veggies','tangerine','cool',['Chicken sausage','Sweet potatoes','Broccoli','Red onion','Olive oil']],
+  ['Beef & broccoli','teal','any',['Flank steak','Broccoli','Coconut aminos','Garlic','Ginger','Rice']],
+  ['Lemon herb chicken','lemon','any',['Chicken thighs','Lemon','Garlic','Rosemary','Potatoes','Olive oil']],
+  ['Shrimp tacos','sky','warm',['Shrimp','Tortillas','Cabbage','Lime','Avocado','Cilantro']],
+  ['Greek chicken bowls','sky','warm',['Chicken breast','Rice','Cucumber','Tomatoes','Feta','Red onion','Olives']],
+  ['Pesto pasta','lime','any',['Pasta','Basil pesto','Cherry tomatoes','Parmesan','Spinach']],
+  ['Butternut squash soup','tangerine','cool',['Butternut squash','Onion','Vegetable broth','Coconut milk','Garlic']],
+  ['Stuffed bell peppers','tomato','cool',['Bell peppers','Ground beef','Rice','Canned tomatoes','Jack cheese','Onion']],
+  ['Burger bowls','mango','any',['Ground beef','Lettuce','Tomatoes','Pickles','Cheddar','Red onion','Potatoes']],
+  ['Teriyaki salmon','bubble','any',['Salmon','Coconut aminos','Ginger','Garlic','Rice','Green beans']],
+  ['Caprese chicken','tomato','warm',['Chicken breast','Fresh mozzarella','Tomatoes','Basil','Balsamic vinegar']],
+  ['Shepherd’s pie','sand','cool',['Ground beef','Potatoes','Carrots','Peas','Onion','Butter','Beef broth']],
+  ['Chicken fajitas','tangerine','any',['Chicken breast','Bell peppers','Onion','Tortillas','Lime','Avocado','Salsa']],
+  ['Minestrone','pistachio','cool',['Cannellini beans','Pasta','Zucchini','Carrots','Celery','Canned tomatoes','Vegetable broth']],
+  ['Poke bowls','aqua','warm',['Ahi tuna','Rice','Cucumber','Avocado','Edamame','Green onions','Coconut aminos']],
+  ['Turkey meatballs & marinara','rose','any',['Ground turkey','Marinara sauce','Spaghetti','Eggs','Parmesan','Garlic']],
+  ['Veggie fried rice','butter','any',['Rice','Eggs','Peas','Carrots','Green onions','Coconut aminos','Garlic']],
+  ['BBQ chicken sweet potatoes','clay','cool',['Chicken breast','Sweet potatoes','BBQ sauce','Green onions','Cheddar']],
+  ['Steak & chimichurri','mint','warm',['Steak','Parsley','Garlic','Red wine vinegar','Olive oil','Potatoes']],
+  ['Thai peanut noodles','coral','any',['Rice noodles','Peanut butter','Coconut aminos','Lime','Carrots','Cabbage','Green onions']],
+  ['Lentil soup','sage','cool',['Lentils','Carrots','Celery','Onion','Canned tomatoes','Vegetable broth','Cumin']],
+  ['Mediterranean quinoa salad','mint','warm',['Quinoa','Cucumber','Cherry tomatoes','Chickpeas','Feta','Lemon','Olive oil']],
+  ['Chicken pot pie','butter','cool',['Chicken breast','Pie crust','Carrots','Peas','Celery','Chicken broth','Butter']],
+  ['Fish tacos','aqua','warm',['White fish','Tortillas','Cabbage','Lime','Avocado','Salsa']],
+  ['Baked ziti','tomato','cool',['Ziti','Marinara sauce','Ricotta','Mozzarella','Ground beef','Basil']],
+  ['Chicken Caesar wraps','pistachio','warm',['Chicken breast','Tortillas','Romaine','Parmesan','Caesar dressing']],
+  ['Carnitas bowls','tangerine','any',['Pork shoulder','Rice','Black beans','Salsa','Avocado','Lime','Cilantro']],
+  ['Shakshuka','cherry','any',['Eggs','Canned tomatoes','Bell pepper','Onion','Garlic','Cumin','Bread']],
+  ['Banana oat pancakes','butter','any',['Oats','Bananas','Eggs','Maple syrup','Berries']],
+  ['Grilled chicken salad','lime','warm',['Chicken breast','Mixed greens','Cucumber','Cherry tomatoes','Avocado','Olive oil','Lemon']],
+  ['Beef stew','clay','cool',['Beef chuck','Potatoes','Carrots','Celery','Onion','Beef broth','Thyme']],
+  ['Tuscan white bean skillet','sage','any',['Cannellini beans','Spinach','Sun-dried tomatoes','Garlic','Parmesan','Bread']],
+  ['Honey garlic shrimp','mango','any',['Shrimp','Honey','Garlic','Coconut aminos','Rice','Broccoli']],
+  ['Margherita flatbread','tomato','warm',['Flatbread','Fresh mozzarella','Tomatoes','Basil','Olive oil']],
+].map(([name,color,season,ingredients],i)=>({id:'rec'+i,name,color,season,ingredients,rec:true}));
+const RECS=REC_POOL.slice(0,14).map(({season,...r})=>r);
+const BATCH=8, ROT_EPOCH=new Date(2026,0,5,12), ROT_DAYS=14;
+function rotation(){
+  const ws=weekStart(0), period=Math.floor((ws-ROT_EPOCH)/(ROT_DAYS*864e5));
+  const next=new Date(ROT_EPOCH); next.setDate(ROT_EPOCH.getDate()+(period+1)*ROT_DAYS);
+  return {period,next};
+}
+function batchIds(){
+  const {period}=rotation(), mo=new Date().getMonth();
+  const season=[10,11,0,1].includes(mo)?'cool':[4,5,6,7].includes(mo)?'warm':'';
+  const list=REC_POOL.filter(r=>r.season==='any'||!season||r.season===season);
+  let a=2026; const rnd=()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+  const order=list.slice(); for(let i=order.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[order[i],order[j]]=[order[j],order[i]]}
+  const start=((period*BATCH)%order.length+order.length)%order.length, ids=new Set();
+  for(let i=0;i<Math.min(BATCH,order.length);i++) ids.add(order[(start+i)%order.length].id);
+  return ids;
+}
+const poolMeal=id=>{ const r=REC_POOL.find(x=>x.id===id); if(!r) return null; const {season,...m}=r; return {...m,ingredients:[...m.ingredients],favBy:[]} };
+function materialize(id){ let m=S.meals.find(x=>x.id===id); if(m) return m; m=poolMeal(id); if(!m) return null; m.ord=Date.now(); S.meals.push(m); return m }
+function catalog(){
+  const batch=batchIds(), stored=new Set(S.meals.map(m=>m.id)), used=new Set();
+  for(const u in S.plans){ const p=S.plans[u]||{}; for(const d in p) for(const k in (p[d]||{})) used.add(p[d][k]) }
+  const out=S.meals.filter(m=>!m.hidden&&(!m.rec||batch.has(m.id)||(m.favBy||[]).length||used.has(m.id)));
+  REC_POOL.forEach(r=>{ if(batch.has(r.id)&&!stored.has(r.id)) out.push(poolMeal(r.id)) });
+  return out;
+}
 let mealsTab=null;
 const STARTERS=[
   ['Street tacos','tomato',['Tortillas','Ground beef','Onion','Cilantro','Lime','Salsa']],
@@ -366,7 +439,7 @@ let S={meals:[],plans:{},checked:{},cart:null,ings:[],cartPhotos:{},users:[],act
 let tab='meals';
 const $=s=>document.querySelector(s);
 const uid=()=>Math.random().toString(36).slice(2,10);
-const meal=id=>S.meals.find(m=>m.id===id);
+const meal=id=>S.meals.find(m=>m.id===id)||poolMeal(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const col=c=>`var(--${COLORS.includes(c)?c:'sky'})`;
 const bcol=c=>c==='ink'?'var(--ink)':c==='white'?'#FFFFFF':COLORS.includes(c)?col(c):'';
@@ -450,7 +523,7 @@ function weekDates(){
   return {today:dow, dates:DAYS.map((_,i)=>{const d=new Date(mon); d.setDate(mon.getDate()+i); return d.getDate()})};
 }
 const getSlot=(d,s,u=S.activeUser)=>S.plans[u]?.[d]?.[s]||null;
-function setSlot(d,s,id,u=S.activeUser){ const p=S.plans[u]=S.plans[u]||{}; p[d]={...(p[d]||{})}; if(id) p[d][s]=id; else delete p[d][s]; }
+function setSlot(d,s,id,u=S.activeUser){ if(id) materialize(id); const p=S.plans[u]=S.plans[u]||{}; p[d]={...(p[d]||{})}; if(id) p[d][s]=id; else delete p[d][s]; }
 const shownUsers=()=>S.users.filter(u=>S.weekUsers.includes(u.id));
 function eachPick(fn,off){ const keys=weekKeys(off??weekOffset); shownUsers().forEach(u=>{ const p=S.plans[u.id]||{}; for(const d of keys) for(const s in (p[d]||{})){ const m=meal(p[d][s]); if(m) fn(m,d,s,u) } }) }
 function usedCount(id){let n=0; eachPick(m=>{if(m.id===id) n++},0); return n}
@@ -459,14 +532,14 @@ const userById=id=>S.users.find(u=>u.id===id);
 const favOf=(m,u)=>(m.favBy||[]).includes(u);
 const activeFav=m=>favOf(m,S.activeUser);
 const weekFav=m=>S.weekUsers.some(u=>favOf(m,u));
-function toggleFav(m){ const u=heartUser(); m.favBy=favOf(m,u)?m.favBy.filter(x=>x!==u):[...(m.favBy||[]),u]; }
+function toggleFav(m){ m=materialize(m.id)||m; const u=heartUser(); m.favBy=favOf(m,u)?m.favBy.filter(x=>x!==u):[...(m.favBy||[]),u]; }
 const initial=n=>(String(n).trim()[0]||'?').toUpperCase();
 const avatar=(u,size)=>`<span class="ava" style="background:${col(u.color)};${size?`width:${size}px;height:${size}px;font-size:${Math.round(size*.5)}px`:''}">${esc(initial(u.name))}</span>`;
 const favDots=m=>S.users.length>1?`<span class="fdots">${S.users.filter(u=>favOf(m,u.id)).map(u=>avatar(u,18)).join('')}</span>`:'';
 const names=ids=>{const n=ids.map(id=>userById(id)?.name).filter(Boolean); return n.length<=2?n.join(' + '):n.slice(0,-1).join(', ')+' + '+n[n.length-1]};
 const favs=()=>S.meals.filter(weekFav);
-const pool=()=>favs().length?favs():S.meals;
-const userPool=u=>{const f=S.meals.filter(m=>favOf(m,u)); return f.length?f:S.meals};
+const pool=()=>favs().length?favs():catalog();
+const userPool=u=>{const f=S.meals.filter(m=>!m.hidden&&favOf(m,u)); return f.length?f:catalog()};
 function randomPick(exclude,u){const pool0=u?userPool(u):pool(); const p0=pool0.filter(m=>m.id!==exclude); const pool1=p0.length?p0:pool0; return pool1[Math.floor(Math.random()*pool1.length)]}
 
 /* ---------- Instacart (Sprouts cart) ---------- */
@@ -570,13 +643,13 @@ function emptyHTML(){
   return `<div class="empty-state"><h2>Start your meal library</h2>
   <p>Add the meals you cook, or pick some from Recommended. Then fill the week by hand or shuffle it.</p>
   <div class="bar"><button class="btn primary" data-act="new">${ICON.plus}Add a meal</button>
-  <button class="btn" data-mtab="recommended">Browse recommended</button></div></div>`;
+  <button class="btn" data-mtab="all">Browse all meals</button></div></div>`;
 }
 function weekSwitch(){
   return `<div class="wkswitch" role="tablist" aria-label="Which week">${[['0','This week'],['1','Next week'],['history','History']].map(([k,l])=>`<button role="tab" data-wk="${k}" aria-selected="${k==='history'?weekView==='history':(weekView==='plan'&&String(weekOffset)===k)}">${l}</button>`).join('')}</div>`;
 }
 function weekHTML(){
-  if(!S.meals.length) return emptyHTML();
+  if(!catalog().length) return emptyHTML();
   if(weekView==='history') return historyHTML();
   const keys=weekKeys(weekOffset), todayKey=isoDay(new Date());
   let h=`<div style="display:flex;flex-direction:column;gap:14px">
@@ -592,7 +665,7 @@ function weekHTML(){
   <p class="note">${S.users.length>1?(shownUsers().length>1?`Showing ${esc(names(S.weekUsers))}’s picks side by side. Shuffle fills each person’s week from their own favorites.`:`Showing ${esc(names(S.weekUsers))}’s week. Shuffle uses their favorites.`):(favs().length?`Shuffle picks from your favorites (${favs().length} meal${favs().length===1?'':'s'}).`:'You haven’t saved favorites yet, so shuffle picks from all meals.')}</p><div class="week">`;
   keys.forEach((k,i)=>{
     const dt=weekDays(weekOffset)[i];
-    h+=`<div class="day${k===todayKey?' today':''}"><div class="dlabel">${DAYS[i]}<small>${dt.getDate()}</small></div>`;
+    h+=`<div class="day${k===todayKey?' today':''}"><div class="dlabel">${DAYS[i]}<small>${dt.getDate()}</small><button type="button" class="addx" data-addx="${k}" aria-label="Add breakfast, snack, dessert or special for ${DAYS[i]}">+</button></div>`;
     const su=shownUsers();
     for(const [s,label] of SLOTS){
       if(su.length===1){ const u=su[0].id, m=meal(getSlot(k,s,u));
@@ -603,6 +676,8 @@ function weekHTML(){
           return `<button class="mini${m?' full':' empty'}" data-slot="${k}|${s}|${u.id}" ${m?`style="${cardStyle(m)}"`:''} aria-label="${esc(u.name)} ${label}">${avatar(u,20)}<span class="n">${m?esc(m.name):'+ Pick'}</span></button>`}).join('')}</div>`;
       }
     }
+    const xs=[]; for(const [e,el] of EXTRAS) su.forEach(u=>{ const m=meal(getSlot(k,e,u.id)); if(m) xs.push(`<button class="xchip" data-slot="${k}|${e}|${u.id}" style="${cardStyle(m)}">${su.length>1?avatar(u,18):''}<span><b>${el}</b> · ${esc(m.name)}</span></button>`) });
+    if(xs.length) h+=`<div class="xrow">${xs.join('')}</div>`;
     h+='</div>';
   });
   return h+'</div></div>';
@@ -613,7 +688,7 @@ function historyHTML(){
     const keys=weekKeys(off); let rows='';
     keys.forEach(k=>{
       const chips=[];
-      for(const [s,label] of SLOTS) shownUsers().forEach(u=>{ const m=meal(getSlot(k,s,u.id)); if(m) chips.push(`<button class="hchip" data-open="${m.id}" style="${cardStyle(m)}">${S.users.length>1?avatar(u,18):''}<span>${label[0]} · ${esc(m.name)}</span></button>`) });
+      for(const [s,label] of ALLSLOTS) shownUsers().forEach(u=>{ const m=meal(getSlot(k,s,u.id)); if(m) chips.push(`<button class="hchip" data-open="${m.id}" style="${cardStyle(m)}">${S.users.length>1?avatar(u,18):''}<span>${SLOTS.some(x=>x[0]===s)?label[0]:label} · ${esc(m.name)}</span></button>`) });
       if(chips.length) rows+=`<div class="hday"><span class="hd">${esc(dayLabel(k))}</span><div class="hchips">${chips.join('')}</div></div>`;
     });
     body+=`<section class="hweek"><div class="wkrange"><b>${off===-1?'Last week':`${-off} weeks ago`}</b><span>${weekRange(off)}</span></div>
@@ -629,27 +704,26 @@ const coverage=m=>S.cart?.items?.length?m.ingredients.filter(x=>inCart(x)).lengt
 const byCart=list=>list.map(m=>({m,p:(coverage(m)??0)/Math.max(1,m.ingredients.length)})).sort((a,b)=>b.p-a.p).map(x=>x.m);
 function cardHTML(m){
   const cov=coverage(m);
-  const chip=cov?`<span class="chip2${cov/m.ingredients.length>=.5?' hot':''}">${cov} of ${m.ingredients.length} in cart</span>`:'';
+  const chip=(cov?`<span class="chip2${cov/m.ingredients.length>=.5?' hot':''}">${cov} of ${m.ingredients.length} in cart</span>`:'')+(m.rec&&batchIds().has(m.id)&&!(m.favBy||[]).length?'<span class="chip2 newr">New this round</span>':'');
   return `<div class="card" style="${cardStyle(m)}"><button class="cardbtn" data-open="${m.id}">${m.img?`<img class="cimg" src="${esc(pic(m.img))}" alt="" loading="lazy" style="aspect-ratio:${Math.max(0.75,m.ratio||1.6)}">`:''}${chip}
     <h3>${esc(m.name)}</h3><p>${esc(m.ingredients.join(', ')||'No ingredients yet')}</p>
     <span class="meta">${favDots(m)}<span>${m.ingredients.length} ingredient${m.ingredients.length===1?'':'s'}${usedCount(m.id)?` · ${usedCount(m.id)}× this week`:''}</span></span></button>
     ${shared()&&S.activeUser!==me()?'':`<button class="heart" data-fav="${m.id}" aria-pressed="${favOf(m,heartUser())}" aria-label="${favOf(m,heartUser())?'Remove from':'Save to'} ${shared()?'my':esc(userById(S.activeUser)?.name||'my')+'’s'} library">${HEART(favOf(m,heartUser()))}</button>`}</div>`;
 }
 function mealsHTML(){
-  const recs=byCart(S.meals.filter(m=>m.rec)), lib=S.meals.filter(activeFav), all=byCart(S.meals);
-  if(!mealsTab) mealsTab='library';
+  if(mealsTab!=='library'&&mealsTab!=='all') mealsTab='library';
+  const lib=S.meals.filter(m=>!m.hidden&&activeFav(m)), batch=batchIds(), cat=catalog();
+  const all=byCart([...cat.filter(m=>batch.has(m.id)),...cat.filter(m=>!m.rec),...cat.filter(m=>m.rec&&!batch.has(m.id))]);
   const peopleH=`<div class="people" role="group" aria-label="Whose favorites">${S.users.map(u=>`<button type="button" data-auser="${u.id}" aria-pressed="${u.id===S.activeUser}">${avatar(u)}<span>${esc(u.name)}</span></button>`).join('')}${shared()?`<button type="button" class="addround" data-act="household" aria-label="Invite people">${ICON.plus}</button>`:`<button type="button" class="addround" data-act="${S.users.length<4?'addperson':'people'}" aria-label="${S.users.length<4?'Add or edit people':'Edit people'}">${ICON.plus}</button>`}</div>`;
-  const tabsH=`<div class="subtabs" role="tablist">${[['library',S.users.length>1?`${esc(userById(S.activeUser).name)}’s library`:'My library',lib.length],['recommended','Recommended',recs.length],['all','All',all.length]].map(([k,l,n])=>`<button role="tab" data-mtab="${k}" aria-selected="${mealsTab===k}">${l}<span class="n">${n}</span></button>`).join('')}</div>`;
+  const tabsH=`<div class="subtabs" role="tablist">${[['library',S.users.length>1?`${esc(userById(S.activeUser).name)}’s library`:'My library',lib.length],['all','All',all.length]].map(([k,l,n])=>`<button role="tab" data-mtab="${k}" aria-selected="${mealsTab===k}">${l}<span class="n">${n}</span></button>`).join('')}</div>`;
   const add=`<button class="card add" data-act="new">${ICON.plus.replace('<svg','<svg width="22" height="22"')}New meal</button>`;
-  const sortNote=S.cart?'Meals with the most ingredients already in your Sprouts cart come first.':'Sync your Sprouts cart on the Groceries tab to sort meals by what you already have.';
   let body;
   if(mealsTab==='library'){
     body=lib.length?`<div class="grid">${lib.map(cardHTML).join('')}${add}</div>`
-      :`<div class="empty-state"><h2>${S.users.length>1?esc(userById(S.activeUser).name)+'’s library is empty':'Your library is empty'}</h2><p>Tap the ♥ on any meal to save it here. Shuffle then picks only from your library.</p><div class="bar"><button class="btn primary" data-mtab="recommended">Browse recommended</button><button class="btn" data-act="new">${ICON.plus}Add your own</button></div></div>`;
-  } else if(mealsTab==='recommended'){
-    body=`<p class="note">${sortNote} Tap ♥ to save one to your library.</p><div class="grid">${recs.map(cardHTML).join('')}</div>`;
+      :`<div class="empty-state"><h2>${S.users.length>1?esc(userById(S.activeUser).name)+'’s library is empty':'Your library is empty'}</h2><p>Tap the ♥ on any meal to save it here. Shuffle then picks only from your library.</p><div class="bar"><button class="btn primary" data-mtab="all">Browse all meals</button><button class="btn" data-act="new">${ICON.plus}Add your own</button></div></div>`;
   } else {
-    body=`<p class="note">${sortNote}</p><div class="grid">${all.map(cardHTML).join('')}${add}</div>`;
+    const {next}=rotation();
+    body=`<p class="note">${BATCH} new recommendations every other Monday · next set ${MONTHS[next.getMonth()]} ${next.getDate()}. Tap ♥ to keep one.</p><div class="grid">${all.map(cardHTML).join('')}${add}</div>`;
   }
   return `<div style="display:flex;flex-direction:column;gap:14px">${peopleH}${tabsH}${body}</div>`;
 }
@@ -701,7 +775,7 @@ function listHTML(){
 
 function plannedUses(test){
   const out=[];
-  shownUsers().forEach(u=>weekKeys(weekOffset).forEach(k=>SLOTS.forEach(([s,l])=>{const m=meal(getSlot(k,s,u.id)); if(m&&m.ingredients.some(test)) out.push(`${shownUsers().length>1?u.name+' · ':''}${dayLabel(k)} ${l.toLowerCase()} · ${m.name}`)})));
+  shownUsers().forEach(u=>weekKeys(weekOffset).forEach(k=>ALLSLOTS.forEach(([s,l])=>{const m=meal(getSlot(k,s,u.id)); if(m&&m.ingredients.some(test)) out.push(`${shownUsers().length>1?u.name+' · ':''}${dayLabel(k)} ${l.toLowerCase()} · ${m.name}`)})));
   return out;
 }
 function cartItemSheet(name){
@@ -802,9 +876,10 @@ function openSheet(html,onMount){
 const closeSheet=()=>{$('#sheetRoot').innerHTML=''};
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
 
-function pickSheet(d,s,u){
-  let pu=(u&&S.users.some(x=>x.id===u))?u:(shared()?me():S.activeUser); const label=SLOTS.find(x=>x[0]===s)[1];
-  openSheet(`<h2>${esc(dayLabel(d))} · ${label}</h2>
+function pickSheet(d,s,u,chooseType){
+  let pu=(u&&S.users.some(x=>x.id===u))?u:(shared()?me():S.activeUser); const label=slotName(s);
+  openSheet(`<h2>${esc(dayLabel(d))}${chooseType?'':' · '+label}</h2>
+    ${chooseType?`<div class="ratios" role="group" aria-label="What kind">${EXTRAS.map(([k,l])=>`<button type="button" data-xt="${k}" aria-pressed="${k===s}">${l}</button>`).join('')}</div>`:''}
     ${S.users.length>1?`<div class="picks"><span class="lbl">Picking for</span><div class="people sm" id="pfor">${S.users.map(x=>`<button type="button" data-pfor="${x.id}" aria-pressed="${x.id===pu}">${avatar(x)}<span>${esc(x.name)}</span></button>`).join('')}</div></div>`:''}
     <div class="row"><button class="btn primary" id="surprise">${ICON.dice}Surprise me</button><button class="btn ghost" id="clr">Clear slot</button></div>
     <input class="field" id="q" placeholder="Search meals" autocomplete="off">
@@ -812,11 +887,12 @@ function pickSheet(d,s,u){
     <button class="btn" id="nm">${ICON.plus}New meal</button>`, sh=>{
     let q='';
     const draw=()=>{ const cur=getSlot(d,s,pu); sh.querySelector('#clr').hidden=!cur;
-      sh.querySelector('#pl').innerHTML=S.meals.filter(m=>m.name.toLowerCase().includes(q)).sort((a,b)=>(favOf(b,pu)?1:0)-(favOf(a,pu)?1:0)).map(m=>
+      sh.querySelector('#pl').innerHTML=catalog().filter(m=>m.name.toLowerCase().includes(q)).sort((a,b)=>(favOf(b,pu)?1:0)-(favOf(a,pu)?1:0)).map(m=>
       `<button data-p="${m.id}" ${m.id===cur?'aria-current="true"':''}>${m.img?`<img class="pthumb" src="${esc(pic(m.img))}" alt="">`:`<span class="pthumb" style="${cardStyle(m)}"></span>`}<span style="flex:1;min-width:0"><span style="display:block;font-weight:600">${esc(m.name)}</span><span class="psub">${esc(m.ingredients.slice(0,4).join(', '))}</span></span>${S.users.length>1?favDots(m):(favOf(m,pu)?'<span style="color:#E5345E" aria-label="In your library">♥</span>':'')}</button>`).join('')||'<p class="note">No match.</p>'};
     draw();
     sh.querySelector('#q').addEventListener('input',e=>{q=e.target.value.trim().toLowerCase();draw()});
     sh.addEventListener('click',e=>{
+      const xt=e.target.closest('[data-xt]'); if(xt){ s=xt.dataset.xt; sh.querySelectorAll('[data-xt]').forEach(b=>b.setAttribute('aria-pressed',b===xt)); draw(); return }
       const pf=e.target.closest('[data-pfor]'); if(pf){pu=pf.dataset.pfor; sh.querySelectorAll('[data-pfor]').forEach(b=>b.setAttribute('aria-pressed',b===pf)); draw(); return}
       const p=e.target.closest('[data-p]');
       if(p){snap();setSlot(d,s,p.dataset.p,pu);showUser(pu);closeSheet();render();save()}
@@ -901,11 +977,11 @@ function makeCropper(host,img,onDone,onCancel){
 function ingSuggestions(){
   const n=new Map();
   const add=x=>{const t=String(x).trim(); if(!t) return; const k=t.toLowerCase(); const e=n.get(k)||{t,c:0}; e.c++; n.set(k,e)};
-  S.ings.forEach(add); S.meals.forEach(m=>m.ingredients.forEach(add));
+  S.ings.forEach(add); catalog().forEach(m=>m.ingredients.forEach(add));
   return [...n.values()].sort((a,b)=>b.c-a.c||a.t.localeCompare(b.t)).map(e=>e.t);
 }
 function editSheet(id,assign){
-  const m=id?meal(id):null;
+  const m=id?(materialize(id)||meal(id)):null;
   const draft={name:m?.name||'',color:m?.color||SWATCH_ORDER[S.meals.length%SWATCH_ORDER.length],border:m?.border||'',photos:(m?mealPhotos(m):[]).map(p=>({...p})),nut:{...(m?.nut||{})},ingredients:[...(m?.ingredients||[])]};
   const MAXP=5; let queue=[];
   const TOP=['tomato','tangerine','mango','lime','teal','sky','grape','bubble'];
@@ -977,7 +1053,7 @@ function editSheet(id,assign){
       if(e.target.closest('#cancel')) closeSheet();
       if(e.target.closest('#del')){
         if(!armed){armed=true;e.target.closest('#del').textContent='Tap again to delete';return}
-        S.meals=S.meals.filter(x=>x.id!==id);
+        if(m&&m.rec){ m.hidden=true; m.favBy=[] } else S.meals=S.meals.filter(x=>x.id!==id);
         for(const u in S.plans){ const p=S.plans[u]; for(const d in p) for(const s in p[d]) if(p[d][s]===id) delete p[d][s]; }
         closeSheet();render();save();
       }
@@ -1265,7 +1341,7 @@ async function startHousehold(hid){
   C.hid=hid; C.base=null; S.activeUser=me(); S.weekUsers=[me()];
   await pull(); await seedIfEmpty(); subscribe(); clearJoin();
 }
-async function seedIfEmpty(){ if(shared()&&C.household&&!S.meals.length){ try{ await seedRecs(); await pull() }catch(e){} } }
+async function seedIfEmpty(){}
 const HCOLORS=['tomato','tangerine','mango','lime','teal','sky','grape','bubble'];
 
 function joinSheet(){ setupSheet('join') }
@@ -1304,7 +1380,6 @@ function setupSheet(startTab){
         if(tabMode==='join'){ const {data,error}=await C.sb.rpc('join_household',{p_code:code,p_display_name:name,p_color:st.color}); if(error) throw error; hid=data }
         else { const {data,error}=await C.sb.rpc('create_household',{p_name:st.hname.trim()||'Our kitchen',p_display_name:name,p_color:st.color}); if(error) throw error; hid=(Array.isArray(data)?data[0]:data).id }
         C.hid=hid; await pull();
-        if(tabMode==='create') await seedRecs();
         if(st.bring) await bringLocal(tabMode,m=>redraw(m,true));
         await startHousehold(hid);
         closeSheet(); toast(tabMode==='join'?`You joined ${C.household?.name||'the household'}`:'Household created. Tap + to invite people.');
@@ -1410,6 +1485,7 @@ document.addEventListener('click',e=>{
   const t=e.target.closest('[data-tab]'); if(t){tab=t.dataset.tab;render();return}
   const g=e.target.closest('[data-goto]'); if(g){tab=g.dataset.goto;render();return}
   if(e.target.closest('#sheetRoot')) return;
+  const ax=e.target.closest('[data-addx]'); if(ax&&!rolling){ pickSheet(ax.dataset.addx,'b',undefined,true); return }
   const sl=e.target.closest('[data-slot]'); if(sl&&!rolling){const [d,s,u]=sl.dataset.slot.split('|');pickSheet(d,s,u||undefined);return}
   const au=e.target.closest('[data-auser]'); if(au){S.activeUser=au.dataset.auser;render();save();return}
   const wu=e.target.closest('[data-wuser]'); if(wu){const id=wu.dataset.wuser; const on=S.weekUsers.includes(id); if(on&&S.weekUsers.length===1){toast('Keep at least one person’s picks on');return} S.weekUsers=on?S.weekUsers.filter(x=>x!==id):[...S.weekUsers,id];render();save();return}

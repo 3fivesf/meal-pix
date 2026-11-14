@@ -1,5 +1,5 @@
 // Meal Pix offline support: serve saved copies, refresh them in the background.
-const CACHE = 'meal-pix-v5';
+const CACHE = 'meal-pix-v7';
 const CORE = ['./', './index.html', './manifest.webmanifest', './img/icon-180.png', './img/icon-192.png', './img/icon-512.png'];
 
 self.addEventListener('install', e => {
