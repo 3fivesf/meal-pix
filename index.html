@@ -405,6 +405,36 @@ button.tile:hover{background:var(--bg)}
 .foot{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
 
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+/* v11: compact editor + recipe */
+.esec{border:1px solid var(--line);background:var(--surface);border-radius:16px}
+.esec>summary{list-style:none;display:flex;align-items:center;gap:10px;padding:13px 14px;cursor:pointer}
+.esec>summary::-webkit-details-marker{display:none}
+.esec>summary .lbl{color:var(--fg);flex:none}
+.esec .ssum{margin-left:auto;font-size:13px;color:var(--muted);text-align:right;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.esec .schev{font-size:20px;line-height:1;color:var(--muted);transition:transform .15s}
+.esec[open] .schev{transform:rotate(90deg)}
+.esec .sbody{display:flex;flex-direction:column;gap:12px;padding:0 14px 14px}
+.sdot{display:inline-block;width:18px;height:18px;border-radius:50%;vertical-align:middle}
+.foot.stick{position:sticky;bottom:calc(-22px - env(safe-area-inset-bottom, 0px));z-index:5;background:var(--bg);margin:0 -18px calc(-22px - env(safe-area-inset-bottom, 0px));padding:10px 18px calc(10px + env(safe-area-inset-bottom, 0px));border-top:1px solid var(--line);box-shadow:0 -8px 18px rgba(0,0,0,.08)}
+.foot.stick #err{flex-basis:100%;margin:0 0 4px;color:var(--tomato)}
+.stepsedit li{gap:2px 8px}
+.sphoto{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sphoto .sbtns{grid-column:auto}
+.primary-soft{background:var(--accent);color:#fff;border-color:var(--accent)}
+.recpage{gap:10px}
+.recpage .rectitle h2{font-size:22px}
+.rectop{grid-template-columns:110px minmax(0,1fr);gap:12px}
+.recimg img{max-height:130px}
+.recings ul{gap:0}
+.recings li button{padding:2px 0;font-size:13.5px}
+.stepcards{gap:6px}
+.stepcard{flex-direction:row;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:14px;text-align:left;width:100%;color:var(--fg)}
+.stepcard .snum{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;font-size:12px;display:grid;place-items:center;flex:none;margin-top:1px}
+.stepcard .sbody2{display:flex;flex-direction:column;gap:8px;min-width:0;flex:1}
+.stepcard .stxt{font-size:15.5px;line-height:1.4}
+.stepcard .stepimg{max-height:180px}
+.stepcard.done .snum{background:var(--sprout)}
+.stepcard.done .stxt{text-decoration:line-through}
 </style>
 
 </head>
@@ -1058,13 +1088,10 @@ function recipeSheet(id){
       <div class="recings"><div class="lblrow"><span class="lbl">Ingredients</span>${got.size?`<span class="note">${got.size}/${m.ingredients.length}</span>`:''}</div>
         ${m.ingredients.length?`<ul>${m.ingredients.map((x,i)=>`<li><button type="button" data-got="${i}" aria-pressed="${got.has(i)}"><span class="ck">${got.has(i)?'✓':''}</span><span>${esc(x)}</span></button></li>`).join('')}</ul>`:'<p class="note" style="margin:0">No ingredients listed.</p>'}</div>
     </div>
-    <div class="lblrow"><span class="lbl">Steps</span><span class="note">${done.size} of ${n} done</span></div>
-    <div class="stepcards">${R.steps.map((x,i)=>{ const img=stepImg(x); return `<section class="stepcard${done.has(i)?' done':''}">
-        <div class="stephead"><span class="snum">${done.has(i)?'✓':i+1}</span><span class="steplbl">Step ${i+1} of ${n}</span></div>
-        <p class="stxt">${esc(stepText(x))}</p>
-        ${img?`<img class="stepimg" src="${esc(pic(img))}" alt="Step ${i+1}" loading="lazy">`:''}
-        <button type="button" class="stepdone" data-sd="${i}" aria-pressed="${done.has(i)}">${done.has(i)?'Done ✓':'Mark done'}</button>
-      </section>` }).join('')}</div>
+    <div class="lblrow"><span class="lbl">Steps</span><span class="note">${done.size} of ${n} done · tap a step when done</span></div>
+    <div class="stepcards">${R.steps.map((x,i)=>{ const img=stepImg(x); return `<button type="button" class="stepcard${done.has(i)?' done':''}" data-sd="${i}" aria-pressed="${done.has(i)}">
+        <span class="snum">${done.has(i)?'✓':i+1}</span><span class="sbody2"><span class="stxt">${esc(stepText(x))}</span>${img?`<img class="stepimg" src="${esc(pic(img))}" alt="Step ${i+1}" loading="lazy">`:''}</span>
+      </button>` }).join('')}</div>
     ${done.size===n?'<p class="note" style="margin:0;text-align:center;font-weight:600">All done. Enjoy!</p>':''}
     <div class="foot">${canWake?`<button class="btn ghost" id="wake" aria-pressed="${!!wakeLock}">${wakeLock?'Screen stays on':'Keep screen on'}</button>`:'<span></span>'}<div class="row"><button class="btn" id="redit">Edit</button><button class="btn" id="rback">Meal</button><button class="btn primary" id="rdone">Done</button></div></div>
   </div>`;
@@ -1316,46 +1343,49 @@ function ingSuggestions(){
 function editSheet(id,assign,opts){
   const m=id?(materialize(id)||meal(id)):null;
   const draft={name:m?.name||'',color:m?.color||SWATCH_ORDER[S.meals.length%SWATCH_ORDER.length],border:m?.border||'',photos:(m?mealPhotos(m):[]).map(p=>({...p})),nut:{...(m?.nut||{})},ingredients:[...(m?.ingredients||[])],recipe:{time:m?.recipe?.time||'',serves:m?.recipe?.serves||'',steps:(m?.recipe?.steps||[]).map(x=>({t:stepText(x),img:stepImg(x),r:(x&&x.r)||0}))}};
-  let recOpen=!!(draft.recipe.steps.length||opts?.focus==='recipe');
-  if(recOpen&&!draft.recipe.steps.length) draft.recipe.steps.push({t:''});
+  let recOpen=true;
   const MAXP=5; let queue=[];
   const TOP=['tomato','tangerine','mango','lime','teal','sky','grape','bubble'];
   const ORDER=[...TOP,...SWATCH_ORDER.filter(c=>!TOP.includes(c))];
   const row=(id,attr,cur)=>`<div class="swatches collapsed" id="${id}">${ORDER.map((c,i)=>`<button type="button" class="${i>=8&&c!==cur?'extra':''}" ${attr}="${c}" aria-label="${c}" aria-pressed="${c===cur}" style="background:${col(c)}"></button>`).join('')}<button type="button" class="more-sw" data-more="${id}" aria-expanded="false">More</button></div>`;
   const ALL=ingSuggestions();
   openSheet(`<h2>${m?'Edit meal':'New meal'}</h2>
-    <div class="lblrow"><span class="lbl">Photos</span><span class="note" id="pcount"></span></div>
-    <div id="photoArea"></div>
     <label class="lbl" for="mn">Name</label><input class="field" id="mn" placeholder="e.g. Chicken teriyaki" value="${esc(draft.name)}" autocomplete="off">
+    <details class="esec" data-sec="photos"><summary><span class="lbl">Photos</span><span class="ssum" id="sum-photos"></span><span class="schev">›</span></summary><div class="sbody">
+    <div id="photoArea"></div>
+    </div></details>
+    <details class="esec" data-sec="look"><summary><span class="lbl">Color & border</span><span class="ssum" id="sum-look"></span><span class="schev">›</span></summary><div class="sbody">
     <span class="lbl">Color</span>${row('sws','data-c',draft.color)}
     <div class="lblrow"><span class="lbl">Border</span><button type="button" class="nob" id="nob" aria-pressed="${!draft.border}">No border</button></div>${row('bws','data-b',draft.border)}
-    <span class="lbl">Preview</span><div class="preview-card" id="prev"></div>
-    <label class="lbl" for="ing">Ingredients</label>
+    </div></details>
+    <details class="esec" data-sec="ings"><summary><span class="lbl">Ingredients</span><span class="ssum" id="sum-ings"></span><span class="schev">›</span></summary><div class="sbody">
     <form class="row" id="ingf"><input class="field" id="ing" placeholder="Type or tap one below" autocomplete="off" list="inglist" style="flex:1;min-width:0"><button class="btn" type="submit">Add</button></form>
     <datalist id="inglist">${ALL.map(x=>`<option value="${esc(x)}"></option>`).join('')}</datalist>
     <div class="chips" id="chips"></div>
     <div id="suggWrap"><span class="lbl">From your meals</span><div class="sugg" id="sugg"></div></div>
-    <span class="lbl">Amounts</span>
+    </div></details>
+    <details class="esec" data-sec="amts"><summary><span class="lbl">Amounts</span><span class="ssum" id="sum-amts"></span><span class="schev">›</span></summary><div class="sbody">
     <div class="nut">${NUTS.map(([k,l])=>`<div class="nutrow"><label class="nl" for="nut-${k}">${l}</label><input class="field nin" id="nut-${k}" data-nut="${k}" value="${esc(draft.nut[k]||'')}" placeholder="g" autocomplete="off"><div class="lmh">${['Low','Med','High'].map(v=>`<button type="button" data-lmh="${k}:${v}" aria-pressed="${draft.nut[k]===v}">${v}</button>`).join('')}</div></div>`).join('')}</div>
     <p class="note" style="margin:-6px 0 0">Type grams (like 30) or tap Low, Med or High.</p>
-    <div class="lblrow" id="recTop"><span class="lbl">Recipe</span><span class="note" id="rcount"></span></div>
+    </div></details>
+    <details class="esec" data-sec="rec" id="recTop"${opts?.focus==='recipe'?' open':''}><summary><span class="lbl">Recipe</span><span class="ssum" id="sum-rec"></span><span class="schev">›</span></summary><div class="sbody">
     <div id="recArea"></div>
-    <p class="note" id="err" hidden></p>
-    <div class="foot"><div class="row">${m?'<button class="btn danger ghost" id="del">Delete</button>':''}</div>
+    </div></details>
+    <span class="lbl">Preview</span><div class="preview-card" id="prev"></div>
+    <div class="foot stick"><p class="note" id="err" hidden></p><div class="row">${m?'<button class="btn danger ghost" id="del">Delete</button>':''}</div>
     <div class="row"><button class="btn ghost" id="cancel">Cancel</button><button class="btn primary" id="sv">Save meal</button></div></div>`, sh=>{
     const er=sh.querySelector('#err'), area=sh.querySelector('#photoArea'), rarea=sh.querySelector('#recArea');
     const grabRec=()=>{ rarea.querySelectorAll('[data-step]').forEach(t=>{draft.recipe.steps[+t.dataset.step].t=t.value}); const tm=rarea.querySelector('#rtime'), sv=rarea.querySelector('#rserves'); if(tm) draft.recipe.time=tm.value; if(sv) draft.recipe.serves=sv.value };
     const fit=t=>{ t.style.height='auto'; t.style.height=Math.min(t.scrollHeight+2,260)+'px' };
     const recView=()=>{
       const st=draft.recipe.steps;
-      sh.querySelector('#rcount').textContent=recOpen&&st.length?`${st.length} step${st.length===1?'':'s'}`:'';
       if(!recOpen){ rarea.innerHTML=`<button type="button" class="recbtn add" id="recstart"><span class="ri">${ICON.plus}</span><span><b>Add a recipe</b><small>Step-by-step directions for making it</small></span></button>`; return }
       rarea.innerHTML=`<div class="recedit">
+        <div class="row"><button type="button" class="btn sm primary-soft" id="pastebtn">Paste a recipe</button><button type="button" class="btn sm" id="addstep">${ICON.plus}Add step</button></div>
         <div class="row" style="flex-wrap:nowrap"><input class="field" id="rtime" value="${esc(draft.recipe.time)}" placeholder="Time, e.g. 30 min" autocomplete="off" style="flex:1;min-width:0"><input class="field" id="rserves" value="${esc(draft.recipe.serves)}" placeholder="Serves, e.g. 4" autocomplete="off" style="flex:1;min-width:0"></div>
-        <ol class="stepsedit">${st.map((x,i)=>`<li><span class="snum">${i+1}</span><textarea class="field" data-step="${i}" rows="2" placeholder="Describe this step">${esc(x.t)}</textarea>
-          <div class="sphoto">${x.prev||x.img?`<span class="sthumb2"><img src="${esc(x.prev||pic(x.img))}" alt=""><button type="button" data-simgdel="${i}" aria-label="Remove step photo">✕</button></span>`:`<label class="saddimg" for="simg-${i}">${ICON.camera}Photo</label>`}<input type="file" id="simg-${i}" data-simg="${i}" accept="image/*" style="position:absolute;width:1px;height:1px;opacity:0"></div><div class="sbtns"><button type="button" data-sup="${i}" aria-label="Move step up" ${i?'':'disabled'}>↑</button><button type="button" data-sdown="${i}" aria-label="Move step down" ${i<st.length-1?'':'disabled'}>↓</button><button type="button" data-sdel="${i}" aria-label="Delete step">✕</button></div></li>`).join('')}</ol>
-        <div class="row"><button type="button" class="btn sm" id="pastebtn">Paste a recipe</button><button type="button" class="btn sm" id="addstep">${ICON.plus}Add step</button></div>
         <div id="pasteBox" hidden><textarea class="field" id="pastetxt" rows="5" placeholder="Paste a whole recipe here. Ingredients go to the ingredient list, and each direction becomes its own step."></textarea><div class="row" style="margin-top:8px"><button type="button" class="btn sm primary" id="pastego">Split into steps</button></div></div>
+        <ol class="stepsedit">${st.map((x,i)=>`<li><span class="snum">${i+1}</span><textarea class="field" data-step="${i}" rows="2" placeholder="Describe step ${i+1}">${esc(x.t)}</textarea>
+          <div class="sphoto">${x.prev||x.img?`<span class="sthumb2"><img src="${esc(x.prev||pic(x.img))}" alt=""><button type="button" data-simgdel="${i}" aria-label="Remove step photo">✕</button></span>`:`<label class="saddimg" for="simg-${i}">${ICON.camera}Photo</label>`}<input type="file" id="simg-${i}" data-simg="${i}" accept="image/*" style="position:absolute;width:1px;height:1px;opacity:0"><div class="sbtns"><button type="button" data-sup="${i}" aria-label="Move step up" ${i?'':'disabled'}>↑</button><button type="button" data-sdown="${i}" aria-label="Move step down" ${i<st.length-1?'':'disabled'}>↓</button><button type="button" data-sdel="${i}" aria-label="Delete step">✕</button></div></div></li>`).join('')}</ol>
       </div>`;
       rarea.querySelectorAll('[data-step]').forEach(t=>{ fit(t); t.addEventListener('input',()=>{ draft.recipe.steps[+t.dataset.step].t=t.value; fit(t) }) });
       rarea.querySelectorAll('[data-simg]').forEach(inp=>inp.addEventListener('change',async()=>{ const f=inp.files&&inp.files[0]; if(!f) return; grabRec();
@@ -1382,9 +1412,21 @@ function editSheet(id,assign,opts){
       if(txt.split('\n').filter(l=>l.trim()).length<2) return;
       e.preventDefault(); grabRec(); applyPaste(txt,+t.dataset.step);
     });
+    const sums=()=>{
+      const set=(k,h)=>{ const e=sh.querySelector('#sum-'+k); if(e) e.innerHTML=h };
+      set('photos',draft.photos.length?`${draft.photos.length} photo${draft.photos.length===1?'':'s'}`:'None');
+      set('look',`<i class="sdot" style="background:${col(draft.color)};${draft.border?`box-shadow:0 0 0 2.5px ${bcol(draft.border)}`:''}"></i>`);
+      set('ings',draft.ingredients.length?String(draft.ingredients.length):'None');
+      const nv=NUTS.map(([k,l])=>draft.nut[k]?`${l[0]} ${esc(draft.nut[k])}`:'').filter(Boolean);
+      set('amts',nv.length?nv.join(' · '):'None');
+      const n=draft.recipe.steps.filter(x=>(x.t||'').trim()||x.img||x.blob).length;
+      set('rec',n?`${n} step${n===1?'':'s'}`:'None');
+    };
+    ['click','input','change','submit','paste'].forEach(ev=>sh.addEventListener(ev,()=>setTimeout(sums,0)));
+    const openSec=el=>{ const d=el&&el.closest('details'); if(d) d.open=true };
     recView();
     const photoView=()=>{
-      sh.querySelector('#pcount').textContent=`${draft.photos.length} of ${MAXP}`;
+      
       area.innerHTML=`<div class="pstrip">${draft.photos.map((p,i)=>`<div class="pth${i===0?' cover':''}"><img src="${esc(p.prev||pic(p.u))}" alt="" data-coverp="${i}" title="Make cover">${i===0&&draft.photos.length>1?'<span class="cv">Cover</span>':''}<button type="button" class="del" data-delp="${i}" aria-label="Remove photo">✕</button></div>`).join('')}
         ${draft.photos.length<MAXP?`<label class="padd" for="mimg"><b>+</b>${draft.photos.length?'Add':'Add photo'}</label>`:''}</div>
         <input type="file" id="mimg" accept="image/*" multiple style="position:absolute;width:1px;height:1px;opacity:0">
@@ -1445,7 +1487,7 @@ function editSheet(id,assign,opts){
         addIngs(sh.querySelector('#ing').value);
         const name=draft.name.trim();
         if(!name){er.textContent='Give the meal a name to save it.';er.hidden=false;sh.querySelector('#mn').focus();return}
-        const nut={}; for(const [k,l] of NUTS){ const v=normNut(draft.nut[k]); if(v===null){er.textContent=`${l}: use a number of grams or Low, Med or High.`;er.hidden=false;sh.querySelector('#nut-'+k).focus();return} if(v) nut[k]=v }
+        const nut={}; for(const [k,l] of NUTS){ const v=normNut(draft.nut[k]); if(v===null){er.textContent=`${l}: use a number of grams or Low, Med or High.`;er.hidden=false;openSec(sh.querySelector('#nut-'+k));sh.querySelector('#nut-'+k).focus();return} if(v) nut[k]=v }
         const btn=e.target.closest('#sv');
         const pend=draft.photos.filter(p=>p.blob);
         if(pend.length){ busy=true; btn.disabled=true; let n=0, failed=0;
@@ -1474,7 +1516,8 @@ function editSheet(id,assign,opts){
       }
     });
     if(!m) setTimeout(()=>sh.querySelector('#mn').focus(),50);
-    if(opts?.focus==='recipe') setTimeout(()=>{ sh.querySelector('#recTop')?.scrollIntoView({block:'start'}); const t=rarea.querySelector('[data-step]'); if(t&&!t.value) t.focus() },120);
+    setTimeout(sums,0);
+    if(opts?.focus==='recipe') setTimeout(()=>{ sh.querySelector('#recTop')?.scrollIntoView({block:'start'}) },120);
   });
 }
 
