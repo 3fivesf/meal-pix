@@ -322,6 +322,31 @@ button.tile:hover{background:var(--bg)}
 .sbtns button:disabled{opacity:.35}
 .sheet.tall{max-height:94vh;max-height:94dvh}
 .recpage{display:flex;flex-direction:column;gap:14px}
+.rectop{display:grid;grid-template-columns:minmax(0,42%) minmax(0,1fr);gap:12px;align-items:start}
+.recimg{border-radius:16px;overflow:hidden;background:var(--surface);border:1px solid var(--line)}
+.recimg img{display:block;width:100%;height:auto;max-height:240px;object-fit:contain}
+.recimg .dart{display:block;aspect-ratio:16/10}
+.recings{min-width:0;display:flex;flex-direction:column;gap:6px}
+.recings ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px}
+.recings li button{display:flex;align-items:flex-start;gap:7px;width:100%;text-align:left;padding:3px 0;font-size:14px;line-height:1.3}
+.recings .ck{width:16px;height:16px;border-radius:5px;border:1.5px solid var(--line);flex:none;margin-top:1px;display:grid;place-items:center;font-size:11px;color:#fff}
+.recings button[aria-pressed="true"] .ck{background:var(--sprout);border-color:var(--sprout)}
+.recings button[aria-pressed="true"] span:last-child{text-decoration:line-through;color:var(--muted)}
+.rplist{display:flex;flex-direction:column;gap:10px}
+.rprev{display:flex;flex-direction:column;gap:10px;width:100%;text-align:left;padding:12px;border-radius:20px;background:var(--surface);border:1px solid var(--line);border-left:6px solid var(--c)}
+.rp-top{display:flex;gap:12px;align-items:flex-start;min-width:0}
+.rp-img{width:84px;height:64px;border-radius:12px;overflow:hidden;flex:none;background:var(--bg)}
+.rp-img img{width:100%;height:100%;object-fit:cover;display:block}
+.rp-img .dart{display:block;width:100%;height:100%}
+.rp-head{display:flex;flex-direction:column;gap:2px;min-width:0}
+.rp-head b{font-family:var(--display);font-size:17px;line-height:1.15}
+.rp-head small{color:var(--muted);font-size:12.5px}
+.rp-ings{font-size:12.5px;color:var(--fg);opacity:.8;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.rp-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.rp-steps li{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;line-height:1.35}
+.rp-steps .rn{width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;flex:none}
+.rp-steps .rt{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-width:0}
+.rp-more{font-size:12.5px;font-weight:600;color:var(--accent)}
 .rechead{display:flex;flex-direction:column;gap:10px}
 .rechead .rechero{width:100%;height:150px;max-height:22vh;object-fit:cover;border-radius:16px;display:block;overflow:hidden}
 .rechead .rechero.dart svg{width:100%;height:100%}
@@ -933,6 +958,16 @@ function historyHTML(){
 const HEART=on=>`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z" fill="${on?'currentColor':'none'}" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>`;
 const coverage=m=>S.cart?.items?.length?m.ingredients.filter(x=>inCart(x)).length:null;
 const byCart=list=>list.map(m=>({m,p:(coverage(m)??0)/Math.max(1,m.ingredients.length)})).sort((a,b)=>b.p-a.p).map(x=>x.m);
+function recipePreview(m){
+  const R=m.recipe, ps=mealPhotos(m), n=R.steps.length;
+  return `<button class="rprev" data-recipe="${m.id}" style="--c:${col(m.color)}">
+    <div class="rp-top"><span class="rp-img">${ps.length?`<img src="${esc(pic(ps[0].u))}" alt="" loading="lazy">`:(dishArt(m)?`<span class="dart">${dishArt(m)}</span>`:'')}</span>
+      <span class="rp-head"><b>${esc(m.name)}</b><small>${[R.time,R.serves?'Serves '+R.serves:'',`${n} step${n===1?'':'s'}`].filter(Boolean).map(esc).join(' · ')}</small>
+        <span class="rp-ings">${m.ingredients.map(esc).join(' · ')||'No ingredients listed'}</span></span></div>
+    <ol class="rp-steps">${R.steps.slice(0,2).map((x,i)=>`<li><span class="rn">${i+1}</span><span class="rt">${esc(stepText(x))}</span></li>`).join('')}</ol>
+    ${n>2?`<span class="rp-more">+ ${n-2} more step${n-2===1?'':'s'}</span>`:''}
+  </button>`;
+}
 function cardHTML(m,act){
   const cov=coverage(m);
   const chip=(cov?`<span class="chip2${cov/m.ingredients.length>=.5?' hot':''}">${cov} of ${m.ingredients.length} in cart</span>`:'')+(m.rec&&batchIds().has(m.id)&&!(m.favBy||[]).length?'<span class="chip2 newr">New this round</span>':'');
@@ -954,7 +989,7 @@ function mealsHTML(){
       :`<div class="empty-state"><h2>${S.users.length>1?esc(userById(S.activeUser).name)+'’s library is empty':'Your library is empty'}</h2><p>Tap the ♥ on any meal to save it here. Shuffle then picks only from your library.</p><div class="bar"><button class="btn primary" data-mtab="all">Browse all meals</button><button class="btn" data-act="new">${ICON.plus}Add your own</button></div></div>`;
   } else if(mealsTab==='recipes'){
     const rs=cat.filter(hasRecipe);
-    body=rs.length?`<p class="note">Meals with step-by-step recipes. Tap one to start cooking.</p><div class="grid">${rs.map(m=>cardHTML(m,'recipe')).join('')}</div>`
+    body=rs.length?`<p class="note">Meals with step-by-step recipes. Tap one to start cooking.</p><div class="rplist">${rs.map(recipePreview).join('')}</div>`
       :`<div class="empty-state"><h2>No recipes yet</h2><p>Open any meal and tap <b>Add a recipe</b> to write or paste the steps. They’ll show up here.</p><div class="bar"><button class="btn primary" data-mtab="all">Browse all meals</button></div></div>`;
   } else {
     const {next}=rotation();
@@ -989,17 +1024,40 @@ function mealSheet(id){
 }
 let wakeLock=null;
 async function setWake(on){ try{ if(on){ wakeLock=await navigator.wakeLock.request('screen') } else if(wakeLock){ await wakeLock.release(); wakeLock=null } }catch(e){ wakeLock=null } }
+function parseRecipeText(txt){
+  const lines=String(txt||'').replace(/\r/g,'').split('\n').map(l=>l.trim());
+  const HDR=/^#*\s*(ingredients?|instructions?|directions?|method|steps|preparation)\s*:?$/i;
+  let mode=lines.some(l=>HDR.test(l))?'pre':'steps'; const ings=[], steps=[]; let time='', serves='';
+  for(const l0 of lines){
+    if(!l0) continue;
+    const h=l0.toLowerCase().replace(/[:\s]+$/,'').replace(/^#+\s*/,'');
+    if(/^(ingredients?|what you(’|')ll need|you will need|you'll need)$/.test(h)){ mode='ings'; continue }
+    if(/^(instructions?|directions?|method|steps|preparation|how to make( it)?)$/.test(h)){ mode='steps'; continue }
+    if(/^(notes?|nutrition( facts)?|equipment|tips)$/.test(h)){ mode='skip'; continue }
+    const tm=l0.match(/^(total time|cook time|time)\s*[:\-]\s*(.+)$/i); if(tm){ time=time||tm[2].slice(0,30); continue }
+    const sv=l0.match(/^(serves|servings|yield)\s*[:\-]?\s*(.+)$/i); if(sv){ serves=serves||sv[2].slice(0,20); continue }
+    if(mode==='skip'||mode==='pre') continue;
+    if(mode==='ings'){ const t=l0.replace(/^[-•*▢☐•]\s*/,'').trim(); if(t) ings.push(t.slice(0,80)); continue }
+    l0.split(/\s(?=\d{1,2}[.)]\s+[A-Z])/).forEach(part=>{
+      const t=part.replace(/^\s*(step\s*)?\d{1,2}\s*[.):\-]\s*/i,'').replace(/^[-•*•]\s*/,'').trim();
+      if(t&&!/^step\s*\d+$/i.test(t)) steps.push(t);
+    });
+  }
+  return {ings,steps,time,serves};
+}
 function recipeSheet(id){
   const m=meal(id); if(!hasRecipe(m)) return;
   const R=m.recipe, ps=mealPhotos(m), done=new Set(), got=new Set();
   const canWake='wakeLock' in navigator;
   const n=R.steps.length;
   const draw=()=>`<div class="recpage">
-    <div class="rechead">${ps.length?`<img class="rechero" src="${esc(pic(ps[0].u))}" alt="">`:(dishArt(m)?`<div class="rechero dart">${dishArt(m)}</div>`:'')}
-      <div class="rectitle"><h2>${esc(m.name)}</h2>
-        <div class="facts">${R.time?`<span>${esc(R.time)}</span>`:''}${R.serves?`<span>Serves ${esc(R.serves)}</span>`:''}<span>${n} step${n===1?'':'s'}</span></div></div></div>
-    ${m.ingredients.length?`<div class="lblrow"><span class="lbl">Ingredients</span><span class="note">${got.size?`${got.size} of ${m.ingredients.length} ready`:'Tap to check off'}</span></div>
-      <div class="ingchips">${m.ingredients.map((x,i)=>`<button type="button" data-got="${i}" aria-pressed="${got.has(i)}">${got.has(i)?'✓ ':''}${esc(x)}</button>`).join('')}</div>`:''}
+    <div class="rectitle"><h2>${esc(m.name)}</h2>
+      <div class="facts">${R.time?`<span>${esc(R.time)}</span>`:''}${R.serves?`<span>Serves ${esc(R.serves)}</span>`:''}<span>${n} step${n===1?'':'s'}</span></div></div>
+    <div class="rectop">
+      <div class="recimg">${ps.length?`<img src="${esc(pic(ps[0].u))}" alt="">`:(dishArt(m)?`<span class="dart">${dishArt(m)}</span>`:'')}</div>
+      <div class="recings"><div class="lblrow"><span class="lbl">Ingredients</span>${got.size?`<span class="note">${got.size}/${m.ingredients.length}</span>`:''}</div>
+        ${m.ingredients.length?`<ul>${m.ingredients.map((x,i)=>`<li><button type="button" data-got="${i}" aria-pressed="${got.has(i)}"><span class="ck">${got.has(i)?'✓':''}</span><span>${esc(x)}</span></button></li>`).join('')}</ul>`:'<p class="note" style="margin:0">No ingredients listed.</p>'}</div>
+    </div>
     <div class="lblrow"><span class="lbl">Steps</span><span class="note">${done.size} of ${n} done</span></div>
     <div class="stepcards">${R.steps.map((x,i)=>{ const img=stepImg(x); return `<section class="stepcard${done.has(i)?' done':''}">
         <div class="stephead"><span class="snum">${done.has(i)?'✓':i+1}</span><span class="steplbl">Step ${i+1} of ${n}</span></div>
@@ -1296,13 +1354,34 @@ function editSheet(id,assign,opts){
         <div class="row" style="flex-wrap:nowrap"><input class="field" id="rtime" value="${esc(draft.recipe.time)}" placeholder="Time, e.g. 30 min" autocomplete="off" style="flex:1;min-width:0"><input class="field" id="rserves" value="${esc(draft.recipe.serves)}" placeholder="Serves, e.g. 4" autocomplete="off" style="flex:1;min-width:0"></div>
         <ol class="stepsedit">${st.map((x,i)=>`<li><span class="snum">${i+1}</span><textarea class="field" data-step="${i}" rows="2" placeholder="Describe this step">${esc(x.t)}</textarea>
           <div class="sphoto">${x.prev||x.img?`<span class="sthumb2"><img src="${esc(x.prev||pic(x.img))}" alt=""><button type="button" data-simgdel="${i}" aria-label="Remove step photo">✕</button></span>`:`<label class="saddimg" for="simg-${i}">${ICON.camera}Photo</label>`}<input type="file" id="simg-${i}" data-simg="${i}" accept="image/*" style="position:absolute;width:1px;height:1px;opacity:0"></div><div class="sbtns"><button type="button" data-sup="${i}" aria-label="Move step up" ${i?'':'disabled'}>↑</button><button type="button" data-sdown="${i}" aria-label="Move step down" ${i<st.length-1?'':'disabled'}>↓</button><button type="button" data-sdel="${i}" aria-label="Delete step">✕</button></div></li>`).join('')}</ol>
-        <div class="row"><button type="button" class="btn sm" id="addstep">${ICON.plus}Add step</button><button type="button" class="btn sm ghost" id="pastebtn">Paste a recipe</button></div>
-        <div id="pasteBox" hidden><textarea class="field" id="pastetxt" rows="5" placeholder="Paste directions here. Each line or numbered step becomes its own step."></textarea><div class="row" style="margin-top:8px"><button type="button" class="btn sm primary" id="pastego">Split into steps</button></div></div>
+        <div class="row"><button type="button" class="btn sm" id="pastebtn">Paste a recipe</button><button type="button" class="btn sm" id="addstep">${ICON.plus}Add step</button></div>
+        <div id="pasteBox" hidden><textarea class="field" id="pastetxt" rows="5" placeholder="Paste a whole recipe here. Ingredients go to the ingredient list, and each direction becomes its own step."></textarea><div class="row" style="margin-top:8px"><button type="button" class="btn sm primary" id="pastego">Split into steps</button></div></div>
       </div>`;
       rarea.querySelectorAll('[data-step]').forEach(t=>{ fit(t); t.addEventListener('input',()=>{ draft.recipe.steps[+t.dataset.step].t=t.value; fit(t) }) });
       rarea.querySelectorAll('[data-simg]').forEach(inp=>inp.addEventListener('change',async()=>{ const f=inp.files&&inp.files[0]; if(!f) return; grabRec();
         try{ const blob=await shrink(f,1400); const x=draft.recipe.steps[+inp.dataset.simg]; x.blob=blob; x.prev=URL.createObjectURL(blob); recView() }catch(e){ er.textContent='That file couldn’t be read as an image. Try a JPG or PNG.'; er.hidden=false } }));
     };
+    const applyPaste=(txt,at)=>{
+      const r=parseRecipeText(txt);
+      if(r.ings.length){ r.ings.forEach(x=>{ if(!draft.ingredients.some(y=>y.toLowerCase()===x.toLowerCase())) draft.ingredients.push(x) }); chips() }
+      if(r.time&&!draft.recipe.time) draft.recipe.time=r.time;
+      if(r.serves&&!draft.recipe.serves) draft.recipe.serves=r.serves;
+      if(r.steps.length){
+        const keep=draft.recipe.steps.filter((x,i)=>i!==at||x.t.trim()||x.img||x.blob);
+        const clean=keep.filter(x=>x.t.trim()||x.img||x.blob);
+        let pos=at>=0?Math.min(at,clean.length):clean.length; if(at>=0&&draft.recipe.steps[at]&&(draft.recipe.steps[at].t.trim()||draft.recipe.steps[at].img)) pos=clean.indexOf(draft.recipe.steps[at])+1;
+        clean.splice(pos,0,...r.steps.map(t=>({t})));
+        draft.recipe.steps=clean.length?clean:[{t:''}];
+      }
+      recView();
+      toast(`Added ${r.steps.length} step${r.steps.length===1?'':'s'}${r.ings.length?` and ${r.ings.length} ingredient${r.ings.length===1?'':'s'}`:''}`);
+    };
+    rarea.addEventListener('paste',e=>{
+      const t=e.target.closest&&e.target.closest('[data-step]'); if(!t) return;
+      const txt=(e.clipboardData||window.clipboardData)?.getData('text')||'';
+      if(txt.split('\n').filter(l=>l.trim()).length<2) return;
+      e.preventDefault(); grabRec(); applyPaste(txt,+t.dataset.step);
+    });
     recView();
     const photoView=()=>{
       sh.querySelector('#pcount').textContent=`${draft.photos.length} of ${MAXP}`;
@@ -1352,9 +1431,7 @@ function editSheet(id,assign,opts){
       const sdn=e.target.closest('[data-sdown]'); if(sdn){ grabRec(); const i=+sdn.dataset.sdown, a=draft.recipe.steps; [a[i+1],a[i]]=[a[i],a[i+1]]; recView(); return }
       const sdl=e.target.closest('[data-sdel]'); if(sdl){ grabRec(); draft.recipe.steps.splice(+sdl.dataset.sdel,1); recView(); return }
       if(e.target.closest('#pastebtn')){ const b=rarea.querySelector('#pasteBox'); b.hidden=!b.hidden; if(!b.hidden) rarea.querySelector('#pastetxt').focus(); return }
-      if(e.target.closest('#pastego')){ grabRec(); const txt=rarea.querySelector('#pastetxt').value;
-        const parts=txt.split(/\n+|(?=\b\d{1,2}[.)]\s)/).map(x=>x.replace(/^\s*(step\s*)?\d{1,2}[.):-]?\s*/i,'').replace(/^[-•*]\s*/,'').trim()).filter(Boolean);
-        if(parts.length){ draft.recipe.steps=[...draft.recipe.steps.filter(x=>x.t.trim()||x.img||x.blob),...parts.map(t=>({t}))]; recView() } return }
+      if(e.target.closest('#pastego')){ grabRec(); applyPaste(rarea.querySelector('#pastetxt').value,-1); return }
       const sg=e.target.closest('[data-sg]'); if(sg){addIngs(sg.dataset.sg);chips()}
       const r=e.target.closest('[data-rm]'); if(r){draft.ingredients.splice(+r.dataset.rm,1);chips()}
       if(e.target.closest('#cancel')) closeSheet();
@@ -1386,9 +1463,10 @@ function editSheet(id,assign,opts){
         grabRec();
         for(const x of draft.recipe.steps){ if(x.blob){ busy=true; btn.disabled=true; btn.textContent='Saving step photos…'; try{ x.img=await storeImage(x.blob) }catch(e){ x.img='' } x.blob=null } }
         busy=false; btn.disabled=false; btn.textContent='Save meal';
-        const steps=draft.recipe.steps.map(x=>({t:String(x.t||'').trim().slice(0,600),img:x.img||''})).filter(x=>x.t||x.img).slice(0,40).map(x=>x.img?x:x.t);
+        const steps=draft.recipe.steps.map(x=>({t:String(x.t||'').trim().slice(0,5000),img:x.img||''})).filter(x=>x.t||x.img).slice(0,80).map(x=>x.img?x:x.t);
         const recipe=steps.length?{time:draft.recipe.time.trim().slice(0,30),serves:draft.recipe.serves.trim().slice(0,20),steps}:null;
         const fields={name,color:draft.color,border:draft.border,nut,imgs,img:imgs[0]?.u||'',ratio:imgs[0]?.r||0,ingredients:draft.ingredients,recipe};
+        if(JSON.stringify(fields).length>150000){ er.textContent='This recipe is too long to save. Shorten some steps and try again.'; er.hidden=false; return }
         if(m) Object.assign(m,fields);
         else {mid=uid();S.meals.push({id:mid,...fields,favBy:[S.activeUser],rec:false})}
         if(assign){snap();setSlot(assign.d,assign.s,mid,assign.u||S.activeUser);showUser(assign.u||S.activeUser);}

@@ -28,7 +28,7 @@ create table if not exists public.members (
 create table if not exists public.meals (
   household_id uuid not null references public.households(id) on delete cascade,
   id           text not null check (char_length(id) between 1 and 64),
-  data         jsonb not null check (pg_column_size(data) < 20000),
+  data         jsonb not null check (pg_column_size(data) < 200000),
   updated_at   timestamptz not null default now(),
   updated_by   uuid default auth.uid(),
   primary key (household_id, id)
@@ -65,6 +65,10 @@ grant usage on schema public to authenticated;
 grant select, insert, update, delete on public.meals, public.favorites, public.plans, public.household_state to authenticated;
 grant select, update on public.households to authenticated;
 grant select, delete on public.members to authenticated;
+
+-- Recipes can be long: allow bigger meal entries (safe to run again).
+alter table public.meals drop constraint if exists meals_data_check;
+alter table public.meals add constraint meals_data_check check (pg_column_size(data) < 200000);
 
 -- ---------- Who belongs where ----------
 
