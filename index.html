@@ -44,7 +44,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45;
   padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:20px 48px}
 .wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
-button,input{font:inherit;color:inherit}
+button,input,textarea,select{font:inherit;color:inherit}
 button{cursor:pointer;border:0;background:none}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 
@@ -94,6 +94,12 @@ h1 .dots i{width:10px;height:10px;border-radius:50%;display:block}
 .card .meta{padding-right:42px;min-height:26px;display:flex;align-items:center;flex-wrap:wrap;gap:4px 6px}
 .card .meta>span:last-child{white-space:nowrap}
 @media (max-width:460px){.subtabs button{padding:7px 11px;font-size:13px}}
+.dart{display:block;overflow:hidden}
+.dart svg{display:block;width:100%;height:100%}
+.cimg.dart{aspect-ratio:16/10}
+.pthumb.dart{overflow:hidden}
+.artbig{border-radius:18px;overflow:hidden;aspect-ratio:16/10;max-width:100%}
+.artbig svg{display:block;width:100%;height:100%}
 .cimg{display:block;width:calc(100% + 28px);max-width:none;margin:-14px -14px 4px;aspect-ratio:16/10;object-fit:cover;border-radius:20px 20px 0 0}
 .slot.withimg{flex-direction:row;align-items:center;justify-content:flex-start;gap:8px;padding-left:6px}
 .slot .sx{display:flex;flex-direction:column;min-width:0}
@@ -298,6 +304,36 @@ button.tile:hover{background:var(--bg)}
 .lmh{display:flex;gap:4px}
 .lmh button{padding:7px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:13px;font-weight:600;color:var(--muted)}
 .lmh button[aria-pressed="true"]{background:var(--fg);border-color:var(--fg);color:var(--bg)}
+.recbtn{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border-radius:16px;background:var(--surface);border:1.5px solid var(--line);text-align:left}
+.recbtn .ri{width:38px;height:38px;border-radius:12px;background:var(--accent);color:#fff;display:grid;place-items:center;flex:none}
+.recbtn .ri svg{width:20px;height:20px}
+.recbtn.add{border-style:dashed}
+.recbtn.add .ri{background:var(--bg);color:var(--accent);border:1.5px dashed var(--line)}
+.recbtn b{display:block;font-size:15px}
+.recbtn small{display:block;color:var(--muted);font-size:13px}
+.recbtn .chev{margin-left:auto;font-size:22px;color:var(--muted)}
+.recedit{display:flex;flex-direction:column;gap:10px}
+.stepsedit{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.stepsedit li{display:grid;grid-template-columns:26px 1fr;gap:4px 8px;align-items:start}
+.stepsedit .snum{width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-size:13px;font-weight:700;display:grid;place-items:center;margin-top:8px}
+.stepsedit textarea{resize:none;line-height:1.4;padding:9px 12px;min-height:44px;overflow:auto}
+.sbtns{grid-column:2;display:flex;gap:6px;justify-content:flex-end}
+.sbtns button{width:30px;height:28px;border-radius:9px;border:1px solid var(--line);background:var(--surface);font-size:13px;color:var(--muted)}
+.sbtns button:disabled{opacity:.35}
+.sheet.tall{max-height:94vh;max-height:94dvh}
+.recpage{display:flex;flex-direction:column;gap:14px}
+.rechero{width:100%;max-height:44vh;object-fit:cover;border-radius:18px;display:block}
+.recing{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.recing label{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:var(--surface);cursor:pointer}
+.recing input{width:20px;height:20px;accent-color:var(--accent);flex:none}
+.recing input:checked+span{text-decoration:line-through;color:var(--muted)}
+.recsteps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.recsteps button{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;padding:12px 14px;border-radius:16px;background:var(--surface);border:1px solid var(--line)}
+.recsteps .snum{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;display:grid;place-items:center;flex:none}
+.recsteps .stxt{font-size:16px;line-height:1.5;padding-top:3px}
+.recsteps button[aria-pressed="true"]{opacity:.55}
+.recsteps button[aria-pressed="true"] .snum{background:var(--sprout)}
+.recsteps button[aria-pressed="true"] .stxt{text-decoration:line-through}
 .sheet h2{font-family:var(--display);font-weight:800;font-size:24px;margin:0}
 .sheet .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .field{width:100%;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--surface)}
@@ -425,6 +461,172 @@ function catalog(){
   REC_POOL.forEach(r=>{ if(batch.has(r.id)&&!stored.has(r.id)) out.push(poolMeal(r.id)) });
   return out;
 }
+/* ---------- illustrated pictures for recommended meals ---------- */
+const FOOD={sauce:'#C2452F',chili:'#B5432F',verde:'#7FB348',curry:'#E9A23B',broth:'#E8A25C',squash:'#F59E42',lentil:'#B9773D',stew:'#8A4A2C',minest:'#D9603F',pesto:'#7DB24A',noodle:'#EBC66E',peanut:'#D8A35D',rice:'#FFFDF5',fried:'#F3D27A',quinoa:'#E8D9B0',greens:'#6CC04A',crust:'#E9B45A',potato:'#F1D9A0',bean:'#3E2A22'};
+function artRnd(seed){ let a=0; for(const ch of String(seed)) a=(a*31+ch.charCodeAt(0))|0; return ()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296} }
+const BITS={
+  bean:(x,y,s)=>`<ellipse cx="${x}" cy="${y}" rx="${7*s}" ry="${4.2*s}" fill="#5A2A1E"/>`,
+  blackbean:(x,y,s)=>`<ellipse cx="${x}" cy="${y}" rx="${6*s}" ry="${3.8*s}" fill="#2E2220"/>`,
+  tomato:(x,y,s)=>`<circle cx="${x}" cy="${y}" r="${8*s}" fill="#F2665A"/><circle cx="${x-2.5*s}" cy="${y-2.5*s}" r="${2.4*s}" fill="#fff" opacity=".55"/>`,
+  dice:(x,y,s)=>`<rect x="${x-4.5*s}" y="${y-4.5*s}" width="${9*s}" height="${9*s}" rx="${2*s}" fill="#F2665A"/>`,
+  green:(x,y,s)=>`<circle cx="${x}" cy="${y}" r="${3.2*s}" fill="#4FA34A"/>`,
+  cheese:(x,y,s)=>`<rect x="${x-4*s}" y="${y-3*s}" width="${8*s}" height="${6*s}" rx="${1.5*s}" fill="#FFD966"/>`,
+  feta:(x,y,s)=>`<rect x="${x-5*s}" y="${y-5*s}" width="${10*s}" height="${10*s}" rx="${2*s}" fill="#FFFFFF" stroke="#EEE7DA" stroke-width="${s}"/>`,
+  egg:(x,y,s)=>`<path d="M${x-20*s} ${y}c0-14 12-20 22-18s20 6 18 18-12 16-22 16-18-4-18-16z" fill="#FFFFFF"/><circle cx="${x+1*s}" cy="${y+1*s}" r="${8*s}" fill="#FFC93C"/><circle cx="${x-2*s}" cy="${y-2*s}" r="${2.5*s}" fill="#fff" opacity=".6"/>`,
+  avocado:(x,y,s)=>`<ellipse cx="${x}" cy="${y}" rx="${14*s}" ry="${8*s}" fill="#5E9E3A"/><ellipse cx="${x}" cy="${y}" rx="${12*s}" ry="${6.4*s}" fill="#C8E68A"/>`,
+  cucumber:(x,y,s)=>`<circle cx="${x}" cy="${y}" r="${8*s}" fill="#4E8F3A"/><circle cx="${x}" cy="${y}" r="${6.5*s}" fill="#D9F0B8"/><circle cx="${x}" cy="${y}" r="${2*s}" fill="#B6DC8C"/>`,
+  zucchini:(x,y,s)=>`<circle cx="${x}" cy="${y}" r="${9*s}" fill="#3F7A2E"/><circle cx="${x}" cy="${y}" r="${7.5*s}" fill="#E8F2C4"/><circle cx="${x}" cy="${y}" r="${3*s}" fill="#D2E6A2"/>`,
+  broccoli:(x,y,s)=>`<rect x="${x-2.5*s}" y="${y}" width="${5*s}" height="${9*s}" rx="${2*s}" fill="#8CC66A"/><circle cx="${x-5*s}" cy="${y-1*s}" r="${5.5*s}" fill="#3F8F3A"/><circle cx="${x+5*s}" cy="${y-1*s}" r="${5.5*s}" fill="#3F8F3A"/><circle cx="${x}" cy="${y-6*s}" r="${6*s}" fill="#4FA34A"/>`,
+  shrimp:(x,y,s)=>`<path d="M${x-9*s} ${y-2*s}a9 9 0 1 1 9 11" fill="none" stroke="#FF8A65" stroke-width="${6*s}" stroke-linecap="round"/><path d="M${x-9*s} ${y-2*s}a9 9 0 1 1 9 11" fill="none" stroke="#FFC2A8" stroke-width="${1.5*s}" stroke-dasharray="${3*s} ${3*s}"/>`,
+  chip:(x,y,s,r)=>`<path d="M${x} ${y-9*s}l${9*s} ${15*s}h${-18*s}z" fill="#F2C35B" transform="rotate(${Math.round(r()*360)} ${x} ${y})"/>`,
+  meat:(x,y,s)=>`<rect x="${x-7*s}" y="${y-5*s}" width="${14*s}" height="${10*s}" rx="${4*s}" fill="#7A3E2A"/>`,
+  pork:(x,y,s)=>`<rect x="${x-8*s}" y="${y-4*s}" width="${16*s}" height="${8*s}" rx="${3*s}" fill="#B9763F"/>`,
+  chicken:(x,y,s)=>`<rect x="${x-8*s}" y="${y-5*s}" width="${16*s}" height="${10*s}" rx="${4*s}" fill="#E5B26B"/><path d="M${x-5*s} ${y}h${10*s}" stroke="#C98F45" stroke-width="${1.5*s}"/>`,
+  salmon:(x,y,s)=>`<rect x="${x-14*s}" y="${y-9*s}" width="${28*s}" height="${18*s}" rx="${5*s}" fill="#FF8A65"/><g stroke="#FFD2C2" stroke-width="${1.6*s}"><path d="M${x-8*s} ${y-9*s}l${-3*s} ${18*s}"/><path d="M${x} ${y-9*s}l${-3*s} ${18*s}"/><path d="M${x+8*s} ${y-9*s}l${-3*s} ${18*s}"/></g>`,
+  tuna:(x,y,s)=>`<rect x="${x-5*s}" y="${y-5*s}" width="${10*s}" height="${10*s}" rx="${2*s}" fill="#E5546A"/>`,
+  fish:(x,y,s)=>`<rect x="${x-9*s}" y="${y-5*s}" width="${18*s}" height="${10*s}" rx="${4*s}" fill="#F5E6C8"/><path d="M${x-9*s} ${y-5*s}h${18*s}" stroke="#E2B86A" stroke-width="${3*s}" stroke-linecap="round"/>`,
+  pea:(x,y,s)=>`<circle cx="${x}" cy="${y}" r="${3.4*s}" fill="#6CC04A"/>`,
+  edamame:(x,y,s)=>`<ellipse cx="${x}" cy="${y}" rx="${5*s}" ry="${3.4*s}" fill="#7CC655"/>`,
+  carrot:(x,y,s,r)=>`<rect x="${x-5*s}" y="${y-2*s}" width="${10*s}" height="${4*s}" rx="${2*s}" fill="#F39237" transform="rotate(${Math.round(r()*180)} ${x} ${y})"/>`,
+  pepper:(x,y,s,r)=>`<path d="M${x-9*s} ${y}h${18*s}" stroke="${r()<.5?'#E8473C':'#F6B93B'}" stroke-width="${5*s}" stroke-linecap="round" transform="rotate(${Math.round(r()*180)} ${x} ${y})"/>`,
+  greenpepper:(x,y,s,r)=>`<path d="M${x-9*s} ${y}h${18*s}" stroke="#5FA53A" stroke-width="${5*s}" stroke-linecap="round" transform="rotate(${Math.round(r()*180)} ${x} ${y})"/>`,
+  meatball:(x,y,s)=>`<circle cx="${x}" cy="${y}" r="${10*s}" fill="#7A3E2A"/><circle cx="${x-3*s}" cy="${y-3*s}" r="${3*s}" fill="#A8634A"/>`,
+  potato:(x,y,s)=>`<rect x="${x-7*s}" y="${y-6*s}" width="${14*s}" height="${12*s}" rx="${4*s}" fill="#E9C77E"/><circle cx="${x-2*s}" cy="${y-2*s}" r="${1.5*s}" fill="#C79A4A"/>`,
+  sweetpotato:(x,y,s)=>`<rect x="${x-7*s}" y="${y-6*s}" width="${14*s}" height="${12*s}" rx="${4*s}" fill="#F08A3C"/>`,
+  sausage:(x,y,s)=>`<circle cx="${x}" cy="${y}" r="${8*s}" fill="#9A4A30"/><circle cx="${x}" cy="${y}" r="${5.5*s}" fill="#C46A4A"/>`,
+  lemon:(x,y,s)=>`<circle cx="${x}" cy="${y}" r="${11*s}" fill="#F6D33C"/><circle cx="${x}" cy="${y}" r="${9*s}" fill="#FCEB8C"/><g stroke="#F6D33C" stroke-width="${1.4*s}"><path d="M${x} ${y-9*s}v${18*s}"/><path d="M${x-9*s} ${y}h${18*s}"/><path d="M${x-6.4*s} ${y-6.4*s}l${12.8*s} ${12.8*s}"/><path d="M${x+6.4*s} ${y-6.4*s}l${-12.8*s} ${12.8*s}"/></g>`,
+  mozz:(x,y,s)=>`<circle cx="${x}" cy="${y}" r="${10*s}" fill="#FFFFFF"/><circle cx="${x+3*s}" cy="${y+3*s}" r="${3*s}" fill="#F3EEE4"/>`,
+  basil:(x,y,s,r)=>`<path d="M${x-8*s} ${y}c4-8 14-8 16 0-4 8-12 8-16 0z" fill="#2F8A3A" transform="rotate(${Math.round(r()*180)} ${x} ${y})"/>`,
+  spinach:(x,y,s,r)=>`<path d="M${x-10*s} ${y}c5-10 17-10 20 0-5 9-15 9-20 0z" fill="#2E7D32" transform="rotate(${Math.round(r()*180)} ${x} ${y})"/>`,
+  lettuce:(x,y,s,r)=>`<path d="M${x-11*s} ${y}c4-9 18-9 22 0-6 8-16 8-22 0z" fill="#7CCB4E" transform="rotate(${Math.round(r()*180)} ${x} ${y})"/>`,
+  cabbage:(x,y,s,r)=>`<path d="M${x-9*s} ${y}q${9*s} ${-6*s} ${18*s} 0" fill="none" stroke="#A86BD1" stroke-width="${3*s}" stroke-linecap="round" transform="rotate(${Math.round(r()*180)} ${x} ${y})"/>`,
+  onion:(x,y,s)=>`<circle cx="${x}" cy="${y}" r="${6*s}" fill="none" stroke="#B05FB8" stroke-width="${2.2*s}"/>`,
+  sour:(x,y,s)=>`<ellipse cx="${x}" cy="${y}" rx="${13*s}" ry="${7*s}" fill="#FFFFFF"/>`,
+  chickpea:(x,y,s)=>`<circle cx="${x}" cy="${y}" r="${5*s}" fill="#E8C98A"/><circle cx="${x-1.5*s}" cy="${y-1.5*s}" r="${1.5*s}" fill="#F6E2B6"/>`,
+  whitebean:(x,y,s)=>`<ellipse cx="${x}" cy="${y}" rx="${6.5*s}" ry="${4*s}" fill="#F4EAD6"/>`,
+  corn:(x,y,s)=>`<circle cx="${x}" cy="${y}" r="${3.6*s}" fill="#F7C93E"/>`,
+  strip:(x,y,s,r)=>`<rect x="${x-10*s}" y="${y-2.5*s}" width="${20*s}" height="${5*s}" rx="${2*s}" fill="#F2C35B" transform="rotate(${Math.round(r()*180)} ${x} ${y})"/>`,
+  berry:(x,y,s)=>`<circle cx="${x}" cy="${y}" r="${5*s}" fill="#5B5BD6"/><circle cx="${x-1.5*s}" cy="${y-1.5*s}" r="${1.4*s}" fill="#A9A9F2"/>`,
+  banana:(x,y,s)=>`<circle cx="${x}" cy="${y}" r="${7*s}" fill="#FCE9A6"/><circle cx="${x}" cy="${y}" r="${2*s}" fill="#E6CF7A"/>`,
+  gnocchi:(x,y,s,r)=>`<ellipse cx="${x}" cy="${y}" rx="${8*s}" ry="${5.5*s}" fill="#F3DFA2" stroke="#E2C47A" stroke-width="${1.2*s}" transform="rotate(${Math.round(r()*180)} ${x} ${y})"/>`,
+  burrata:(x,y,s)=>`<circle cx="${x}" cy="${y}" r="${16*s}" fill="#FFFFFF"/><path d="M${x-8*s} ${y-12*s}q${8*s} ${-6*s} ${16*s} 0" fill="#F3EEE4"/>`,
+  pickle:(x,y,s)=>`<circle cx="${x}" cy="${y}" r="${6*s}" fill="#6E9F3A"/><circle cx="${x}" cy="${y}" r="${4.5*s}" fill="#B8D67A"/>`,
+  olive:(x,y,s)=>`<circle cx="${x}" cy="${y}" r="${4.5*s}" fill="#3A2F3F"/><circle cx="${x}" cy="${y}" r="${1.6*s}" fill="#7B6A80"/>`,
+  chimi:(x,y,s,r)=>`<circle cx="${x}" cy="${y}" r="${3*s}" fill="#3E8F3A" opacity=".9"/>`,
+  crouton:(x,y,s)=>`<rect x="${x-4.5*s}" y="${y-4.5*s}" width="${9*s}" height="${9*s}" rx="${2*s}" fill="#E0B160"/>`,
+  sesame:(x,y,s)=>`<ellipse cx="${x}" cy="${y}" rx="${1.6*s}" ry="${1*s}" fill="#FFF7E0"/>`,
+  ricotta:(x,y,s)=>`<circle cx="${x}" cy="${y}" r="${7*s}" fill="#FFFDF5"/>`,
+};
+function scatter(list,cx,cy,rx,ry,r,s=1,avoid){
+  const out=[]; const pts=[];
+  list.forEach(([k,n])=>{ for(let i=0;i<n;i++){ let x,y,t=0; do{ const a=r()*Math.PI*2, d=Math.sqrt(r())*.9; x=cx+Math.cos(a)*rx*d; y=cy+Math.sin(a)*ry*d; t++ }while(t<12&&pts.some(p=>Math.hypot(p[0]-x,p[1]-y)<12*s)); pts.push([x,y]); out.push(BITS[k](Math.round(x),Math.round(y),s,r)) } });
+  return out.join('');
+}
+function artFrame(color,inner,r){
+  const cx=Math.round(40+r()*240), cy=Math.round(r()<.5?20:180);
+  return `<svg viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="xMidYMid slice"><rect width="320" height="200" fill="${color}"/><rect width="320" height="200" fill="#FFFFFF" opacity=".42"/><circle cx="${cx}" cy="${cy}" r="70" fill="#FFFFFF" opacity=".22"/>${inner}</svg>`;
+}
+const ART_TYPES={
+  bowl:(p,r)=>`<g fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" opacity=".85"><path d="M130 58c-9-12 9-20 0-32"/><path d="M160 52c-9-12 9-20 0-32"/><path d="M190 58c-9-12 9-20 0-32"/></g>
+    <ellipse cx="160" cy="180" rx="92" ry="11" fill="#000" opacity=".08"/>
+    <path d="M66 100h188c0 46-40 76-94 76s-94-30-94-76z" fill="#FFF7EA"/><path d="M66 100h188c-2 9-6 17-10 24H76c-4-7-8-15-10-24z" fill="#F2E3CC"/>
+    <ellipse cx="160" cy="100" rx="94" ry="21" fill="#FFF7EA"/><ellipse cx="160" cy="101" rx="82" ry="15" fill="${p.base}"/>${scatter(p.top,160,100,70,10,r,.8)}`,
+  ricebowl:(p,r)=>{ const big=new Set(['salmon','avocado','egg','burrata','lemon']);
+    const tex=Array.from({length:26},()=>{const a=r()*Math.PI*2,d=Math.sqrt(r())*62;return `<ellipse cx="${Math.round(160+Math.cos(a)*d)}" cy="${Math.round(100+Math.sin(a)*d)}" rx="3.2" ry="2" fill="#000" opacity=".06" transform="rotate(${Math.round(r()*180)} ${Math.round(160+Math.cos(a)*d)} ${Math.round(100+Math.sin(a)*d)})"/>`}).join('');
+    return `<ellipse cx="166" cy="186" rx="84" ry="10" fill="#000" opacity=".08"/><circle cx="160" cy="100" r="84" fill="#E9E4F2"/><circle cx="160" cy="100" r="78" fill="#FFFFFF"/><circle cx="160" cy="100" r="68" fill="${p.base||FOOD.rice}"/>${tex}
+    ${p.top.map(([k,n],i,a)=>{ const ang=(i/a.length)*Math.PI*2-Math.PI/2+.4, x=160+Math.cos(ang)*34, y=100+Math.sin(ang)*34; return scatter([[k,big.has(k)?n:Math.max(3,Math.round(n*1.8))]],x,y,22,20,r,big.has(k)?1.25:1.3) }).join('')}${p.center?BITS[p.center](160,100,1.1,r):''}`},
+  plate:(p,r)=>`<ellipse cx="166" cy="186" rx="88" ry="10" fill="#000" opacity=".08"/><circle cx="160" cy="100" r="86" fill="#FFFFFF"/><circle cx="160" cy="100" r="70" fill="#F7F4EE"/>
+    ${p.main==='steak'?`<path d="M106 78c16-18 58-16 70 4s4 46-22 50-58-8-60-26 2-20 12-28z" fill="#7A3E2A"/><g stroke="#5A2A1E" stroke-width="4" stroke-linecap="round"><path d="M118 88l40 20"/><path d="M116 106l40 20"/><path d="M128 74l40 20"/></g>`
+      :p.main==='salmon'?`<rect x="104" y="72" width="78" height="50" rx="14" fill="#FF8A65"/><path d="M104 84h78" stroke="#C2452F" stroke-width="8" opacity=".55"/><g stroke="#FFD2C2" stroke-width="3"><path d="M124 72l-8 50"/><path d="M146 72l-8 50"/><path d="M168 72l-8 50"/></g>`
+      :`<path d="M102 82c10-20 64-22 78 0s4 44-24 46-60-6-60-22 2-16 6-24z" fill="#E5B26B"/><g stroke="#C98F45" stroke-width="4" stroke-linecap="round"><path d="M116 92l44 12"/><path d="M114 108l44 12"/></g>`}
+    ${scatter(p.top,204,104,26,40,r,1)}${p.on?scatter(p.on,142,100,24,16,r,.9):''}`,
+  pasta:(p,r)=>`<ellipse cx="166" cy="186" rx="88" ry="10" fill="#000" opacity=".08"/><circle cx="160" cy="100" r="86" fill="#FFFFFF"/><circle cx="160" cy="100" r="70" fill="#F4F1FF"/>
+    ${p.gnocchi?scatter([['gnocchi',20]],160,100,54,50,r,1.35):`<g fill="none" stroke="${p.noodle||FOOD.noodle}" stroke-width="8" stroke-linecap="round"><path d="M110 100c0-30 22-52 50-52s50 22 50 52-22 48-50 48"/><path d="M126 100c0-20 16-36 34-36s34 16 34 36-16 32-34 32"/><path d="M142 100c0-10 8-18 18-18s18 8 18 18-8 14-18 14"/><path d="M104 122c16 24 54 34 82 18"/><path d="M118 72c24-20 60-18 80 6"/></g>`}
+    ${p.sauce?`<circle cx="160" cy="100" r="30" fill="${p.sauce}" opacity=".8"/>`:''}${scatter(p.top,160,100,50,46,r,1)}`,
+  taco:(p,r)=>`<ellipse cx="160" cy="182" rx="112" ry="11" fill="#000" opacity=".08"/>
+    <g transform="translate(58 44) rotate(-8)"><path d="M0 120a86 86 0 0 1 172 0z" fill="#F6C451"/><path d="M12 116c14-32 42-50 74-50s60 18 74 50" fill="none" stroke="${p.base}" stroke-width="24" stroke-linecap="round"/>
+    <path d="M16 104c10-7 18 4 30-4s16 2 28-6 18 2 30-4 16 4 28-2 16 6 28 2" fill="none" stroke="${p.leaf||'#6CC04A'}" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+    ${scatter(p.top,86,82,52,12,r,.9)}<path d="M0 120a86 86 0 0 1 172 0" fill="none" stroke="#E0A93A" stroke-width="6"/></g>
+    <g transform="translate(240 150)"><path d="M0 0a32 32 0 0 1 64 0z" fill="#7CC04A"/><path d="M7 0a25 25 0 0 1 50 0z" fill="#D7F2A6"/><g stroke="#9ACF63" stroke-width="3"><path d="M32 0V-23"/><path d="M32 0L15-17"/><path d="M32 0L49-17"/></g></g>`,
+  wrap:(p,r)=>`<ellipse cx="160" cy="176" rx="110" ry="11" fill="#000" opacity=".08"/>
+    <g transform="rotate(-12 160 110)"><rect x="56" y="74" width="150" height="72" rx="36" fill="${p.wrap||'#F2D9A0'}"/><path d="M80 80c30 8 70 8 110 0M80 140c30-8 70-8 110 0" stroke="#E2BE7C" stroke-width="3" fill="none" opacity=".7"/>
+    <ellipse cx="206" cy="110" rx="26" ry="36" fill="${p.wrap||'#F2D9A0'}"/><ellipse cx="206" cy="110" rx="20" ry="29" fill="${p.base}"/>${scatter(p.top,206,110,13,20,r,.8)}
+    <path d="M206 81a20 29 0 0 0 0 58" fill="none" stroke="${p.wrap||'#F2D9A0'}" stroke-width="5" opacity=".9"/></g>`,
+  skillet:(p,r)=>`<ellipse cx="160" cy="186" rx="96" ry="10" fill="#000" opacity=".1"/><rect x="220" y="90" width="92" height="20" rx="10" fill="#2E2F38" transform="rotate(-10 220 100)"/>
+    <circle cx="150" cy="102" r="84" fill="#2E2F38"/><circle cx="150" cy="102" r="72" fill="${p.base}"/>${scatter(p.top,150,102,56,56,r,1.05)}`,
+  tray:(p,r)=>`<ellipse cx="160" cy="184" rx="124" ry="10" fill="#000" opacity=".08"/><rect x="34" y="34" width="252" height="140" rx="18" fill="#B9BCC8"/><rect x="46" y="44" width="228" height="120" rx="10" fill="#F6F1E6"/>${scatter(p.top.map(([k,n])=>[k,Math.round(n*1.3)]),160,104,100,50,r,1.55)}`,
+  dish:(p,r)=>`<ellipse cx="160" cy="184" rx="118" ry="10" fill="#000" opacity=".08"/><rect x="26" y="78" width="268" height="44" rx="14" fill="#FFFFFF"/><rect x="44" y="30" width="232" height="144" rx="22" fill="#FFFFFF"/><rect x="56" y="42" width="208" height="120" rx="14" fill="${p.base}"/>
+    ${p.rolls?Array.from({length:4},(_,i)=>`<rect x="${70+i*48}" y="50" width="40" height="104" rx="18" fill="#E9C77E"/><rect x="${74+i*48}" y="56" width="32" height="92" rx="14" fill="${p.rolls}" opacity=".85"/>`).join(''):''}
+    ${p.peppers?Array.from({length:4},(_,i)=>`<circle cx="${92+i*46}" cy="${i%2?120:84}" r="26" fill="${['#E8473C','#5FA53A','#F6B93B','#E8473C'][i]}"/><circle cx="${92+i*46}" cy="${i%2?120:84}" r="19" fill="#9A4A30"/><circle cx="${92+i*46}" cy="${i%2?120:84}" r="11" fill="#FFD966"/>`).join(''):''}
+    ${p.crust?`<rect x="62" y="48" width="196" height="108" rx="12" fill="${p.crust}"/><g fill="none" stroke="#C98F35" stroke-width="4" stroke-linecap="round"><path d="M100 80l20 20"/><path d="M150 76l20 20"/><path d="M200 80l20 20"/><path d="M120 120l20 20"/><path d="M180 118l20 20"/></g>`:''}
+    ${p.mash?Array.from({length:12},(_,i)=>`<circle cx="${82+(i%4)*52}" cy="${66+Math.floor(i/4)*36}" r="22" fill="${FOOD.potato}"/><circle cx="${76+(i%4)*52}" cy="${60+Math.floor(i/4)*36}" r="7" fill="#F8E6BC"/>`).join(''):''}
+    ${scatter(p.top,160,102,90,48,r,1.1)}`,
+  stack:(p,r)=>`<ellipse cx="160" cy="182" rx="104" ry="11" fill="#000" opacity=".08"/><ellipse cx="160" cy="168" rx="98" ry="16" fill="#FFFFFF"/>
+    ${[0,1,2,3].map(i=>`<ellipse cx="160" cy="${152-i*20}" rx="74" ry="16" fill="#C98A3D"/><ellipse cx="160" cy="${146-i*20}" rx="74" ry="15" fill="#EBB565"/>`).join('')}
+    <path d="M100 86c20-12 100-12 120 0 6 6-6 14-6 26s-8 8-8-2-50-6-54 6-6 12-8 0-30-8-38-4-10-18-6-26z" fill="#B5651D" opacity=".75"/>${scatter([['berry',5],['banana',3]],160,84,52,8,r,1)}`,
+  flatbread:(p,r)=>`<ellipse cx="166" cy="184" rx="104" ry="10" fill="#000" opacity=".08"/><ellipse cx="160" cy="100" rx="120" ry="76" fill="${p.edge||FOOD.crust}"/><ellipse cx="160" cy="100" rx="106" ry="64" fill="${p.base}"/>
+    ${scatter(p.top,160,100,88,50,r,1.1)}${p.cuts?`<g stroke="${p.edge||FOOD.crust}" stroke-width="4"><path d="M160 24v152"/><path d="M48 100h224"/></g>`:''}`,
+};
+const REC_ART={
+  rec0:['dish',{base:'#7FB348',rolls:'#E9C77E',top:[['cheese',10],['green',10],['sour',2]]}],
+  rec1:['skillet',{base:'#7FB348',top:[['chip',9],['egg',1],['onion',4],['green',6]]}],
+  rec2:['taco',{base:'#2E2220',top:[['tomato',3],['onion',2],['cheese',3]]}],
+  rec3:['flatbread',{base:'#F2D9A0',edge:'#E2B86A',cuts:true,top:[['cheese',12],['greenpepper',6],['green',6]]}],
+  rec4:['skillet',{base:FOOD.sauce,top:[['egg',2],['blackbean',8],['green',8],['cheese',5]]}],
+  rec5:['skillet',{base:'#4A3A30',top:[['zucchini',8],['blackbean',10],['cheese',5],['green',5]]}],
+  rec6:['pasta',{gnocchi:true,top:[['burrata',1],['zucchini',5],['basil',4]]}],
+  rec7:['taco',{base:'#7A3E2A',leaf:'#4FA34A',top:[['onion',4],['green',6]]}],
+  rec8:['wrap',{base:'#FFC93C',top:[['potato',3],['tomato',2],['green',3]]}],
+  rec9:['ricebowl',{top:[['chicken',4],['pepper',4],['broccoli',3],['sesame',8]]}],
+  rec10:['pasta',{sauce:FOOD.sauce,top:[['basil',4],['tomato',2],['cheese',4]]}],
+  rec11:['ricebowl',{top:[['salmon',1],['avocado',2],['cucumber',4],['sesame',8]]}],
+  rec12:['bowl',{base:FOOD.curry,top:[['chickpea',7],['spinach',3]]}],
+  rec13:['wrap',{base:'#7CCB4E',wrap:'#F4E2B8',top:[['tomato',2],['chicken',2]]}],
+  rec14:['bowl',{base:FOOD.chili,top:[['bean',6],['sour',1],['green',5]]}],
+  rec15:['bowl',{base:FOOD.broth,top:[['strip',5],['avocado',1],['green',5],['corn',4]]}],
+  rec16:['tray',{top:[['sausage',8],['sweetpotato',7],['broccoli',5],['onion',4]]}],
+  rec17:['ricebowl',{top:[['meat',5],['broccoli',5],['sesame',8]]}],
+  rec18:['plate',{main:'chicken',top:[['potato',5],['green',4]],on:[['lemon',1]]}],
+  rec19:['taco',{base:'#F9C9B4',leaf:'#A86BD1',top:[['shrimp',3],['avocado',1]]}],
+  rec20:['ricebowl',{top:[['chicken',3],['cucumber',3],['tomato',3],['feta',3],['olive',3]]}],
+  rec21:['pasta',{noodle:'#A7C957',top:[['tomato',4],['basil',4],['cheese',4]]}],
+  rec22:['bowl',{base:FOOD.squash,top:[['sour',1],['green',5]]}],
+  rec23:['dish',{base:'#F6E6CC',peppers:true,top:[]}],
+  rec24:['ricebowl',{base:'#DDEFC8',top:[['meat',4],['tomato',3],['cheese',4],['pickle',3],['onion',3]]}],
+  rec25:['plate',{main:'salmon',top:[['greenpepper',6],['green',4]],on:[['sesame',6]]}],
+  rec26:['plate',{main:'chicken',top:[['tomato',3],['basil',3]],on:[['mozz',2],['basil',1]]}],
+  rec27:['dish',{base:'#8A4A2C',mash:true,top:[['green',8]]}],
+  rec28:['skillet',{base:'#6A4A3A',top:[['pepper',10],['greenpepper',4],['chicken',5],['onion',3]]}],
+  rec29:['bowl',{base:FOOD.minest,top:[['whitebean',4],['carrot',4],['zucchini',2],['green',4]]}],
+  rec30:['ricebowl',{top:[['tuna',5],['avocado',2],['edamame',5],['cucumber',3]]}],
+  rec31:['pasta',{sauce:FOOD.sauce,top:[['meatball',4],['basil',3],['cheese',4]]}],
+  rec32:['ricebowl',{base:FOOD.fried,top:[['pea',8],['carrot',6],['green',6],['egg',1]]}],
+  rec33:['tray',{top:[['sweetpotato',9],['chicken',6],['green',6],['cheese',5]]}],
+  rec34:['plate',{main:'steak',top:[['potato',5],['chimi',6]],on:[['chimi',8]]}],
+  rec35:['pasta',{noodle:FOOD.peanut,top:[['carrot',6],['cabbage',6],['green',6]]}],
+  rec36:['bowl',{base:FOOD.lentil,top:[['carrot',4],['green',5]]}],
+  rec37:['ricebowl',{base:FOOD.quinoa,top:[['cucumber',3],['tomato',3],['chickpea',5],['feta',3]]}],
+  rec38:['dish',{base:'#E9B45A',crust:'#E9B45A',top:[]}],
+  rec39:['taco',{base:'#F5E6C8',leaf:'#A86BD1',top:[['fish',2],['avocado',1],['tomato',1]]}],
+  rec40:['dish',{base:FOOD.sauce,top:[['ricotta',6],['cheese',8],['basil',5]]}],
+  rec41:['wrap',{base:'#9AD06A',wrap:'#F4E2B8',top:[['chicken',2],['crouton',2]]}],
+  rec42:['ricebowl',{top:[['pork',4],['blackbean',6],['avocado',1],['tomato',3]]}],
+  rec43:['skillet',{base:FOOD.sauce,top:[['egg',3],['green',8]]}],
+  rec44:['stack',{top:[]}],
+  rec45:['ricebowl',{base:'#CFEBB0',top:[['chicken',3],['tomato',3],['cucumber',3],['avocado',1],['lettuce',3]]}],
+  rec46:['bowl',{base:FOOD.stew,top:[['potato',3],['carrot',4],['green',4]]}],
+  rec47:['skillet',{base:'#E8D9B0',top:[['whitebean',10],['spinach',5],['tomato',3]]}],
+  rec48:['ricebowl',{top:[['shrimp',5],['broccoli',4],['sesame',8]]}],
+  rec49:['flatbread',{base:FOOD.sauce,top:[['mozz',6],['basil',6]]}],
+};
+const artCache={};
+function dishArt(m){
+  const spec=m&&REC_ART[m.id]; if(!spec) return '';
+  const key=m.id+'|'+m.color; if(artCache[key]) return artCache[key];
+  const r=artRnd(m.id); const [type,p]=spec;
+  return artCache[key]=artFrame(col(m.color),ART_TYPES[type]({...p,top:p.top||[]},r),r);
+}
+
 let mealsTab=null;
 const STARTERS=[
   ['Street tacos','tomato',['Tortillas','Ground beef','Onion','Cilantro','Lime','Salsa']],
@@ -451,6 +653,7 @@ const ICON={
   trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
   undo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>',
   x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5"/><path d="M9 8h6M9 12h6"/></svg>',
   plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'
 };
 
@@ -705,7 +908,7 @@ const byCart=list=>list.map(m=>({m,p:(coverage(m)??0)/Math.max(1,m.ingredients.l
 function cardHTML(m){
   const cov=coverage(m);
   const chip=(cov?`<span class="chip2${cov/m.ingredients.length>=.5?' hot':''}">${cov} of ${m.ingredients.length} in cart</span>`:'')+(m.rec&&batchIds().has(m.id)&&!(m.favBy||[]).length?'<span class="chip2 newr">New this round</span>':'');
-  return `<div class="card" style="${cardStyle(m)}"><button class="cardbtn" data-open="${m.id}">${m.img?`<img class="cimg" src="${esc(pic(m.img))}" alt="" loading="lazy" style="aspect-ratio:${Math.max(0.75,m.ratio||1.6)}">`:''}${chip}
+  return `<div class="card" style="${cardStyle(m)}"><button class="cardbtn" data-open="${m.id}">${m.img?`<img class="cimg" src="${esc(pic(m.img))}" alt="" loading="lazy" style="aspect-ratio:${Math.max(0.75,m.ratio||1.6)}">`:(dishArt(m)?`<span class="cimg dart">${dishArt(m)}</span>`:'')}${chip}
     <h3>${esc(m.name)}</h3><p>${esc(m.ingredients.join(', ')||'No ingredients yet')}</p>
     <span class="meta">${favDots(m)}<span>${m.ingredients.length} ingredient${m.ingredients.length===1?'':'s'}${usedCount(m.id)?` · ${usedCount(m.id)}× this week`:''}</span></span></button>
     ${shared()&&S.activeUser!==me()?'':`<button class="heart" data-fav="${m.id}" aria-pressed="${favOf(m,heartUser())}" aria-label="${favOf(m,heartUser())?'Remove from':'Save to'} ${shared()?'my':esc(userById(S.activeUser)?.name||'my')+'’s'} library">${HEART(favOf(m,heartUser()))}</button>`}</div>`;
@@ -732,20 +935,52 @@ function mealSheet(id){
   const draw=()=>{const ps=mealPhotos(m), who=S.users.filter(u=>favOf(m,u.id)), nut=m.nut||{};
     const hasNut=NUTS.some(([k])=>nut[k]);
     const ar=ps.length?Math.max(0.75,Math.min(...ps.map(p=>p.r||1))):1;
-    return `${!ps.length?'':`<div class="gallery" style="aspect-ratio:${ar.toFixed(3)}">${ps.map(p=>`<img src="${esc(pic(p.u))}" alt="" loading="lazy">`).join('')}</div>
+    return `${!ps.length?(dishArt(m)?`<div class="artbig">${dishArt(m)}</div><p class="note" style="margin:-6px 0 0;text-align:center">Sample picture · tap Edit to add your own photo</p>`:''):`<div class="gallery" style="aspect-ratio:${ar.toFixed(3)}">${ps.map(p=>`<img src="${esc(pic(p.u))}" alt="" loading="lazy">`).join('')}</div>
       ${ps.length>1?`<div class="gdots" aria-hidden="true">${ps.map((_,i)=>`<i${i?'':' class="on"'}></i>`).join('')}</div>`:''}`}
     <div class="titlerow"><h2>${esc(m.name)}</h2><button class="btn sm" id="ed">Edit</button></div>
     ${who.length?`<div class="whorow">${who.map(u=>`<span class="ava" style="background:${col(u.color)}" title="${esc(u.name)}" aria-label="${esc(u.name)}">${esc(initial(u.name))}</span>`).join('')}</div>`:''}
     ${hasNut?`<div class="pfc">${NUTS.map(([k,,ab],i)=>`${i?'<span class="dash">-</span>':''}<span><b>${ab}</b> ${esc(nut[k]||'—')}</span>`).join('')}</div>`:''}
     <span class="lbl">Ingredients</span>
     <ul class="ingl">${m.ingredients.map(x=>{const h=inCart(x);return `<li>${h&&photoOf(h.name)?`<img src="${photoOf(h.name)}" alt="" style="width:34px;height:34px;border-radius:8px;object-fit:contain;background:#fff;flex:none">`:`<span class="sw" style="background:${col(m.color)};width:12px;height:12px;flex:none"></span>`}<span>${esc(x)}</span>${h?'<span class="tag">In cart</span>':''}</li>`}).join('')||'<li><span>No ingredients yet</span></li>'}</ul>
+    ${(m.recipe&&m.recipe.steps&&m.recipe.steps.length)?`<button class="recbtn" id="openrec"><span class="ri">${ICON.book}</span><span><b>View recipe</b><small>${m.recipe.steps.length} step${m.recipe.steps.length===1?'':'s'}${m.recipe.time?' · '+esc(m.recipe.time):''}${m.recipe.serves?' · serves '+esc(m.recipe.serves):''}</small></span><span class="chev">›</span></button>`:`<button class="recbtn add" id="addrec"><span class="ri">${ICON.plus}</span><span><b>Add a recipe</b><small>Step-by-step directions for making it</small></span></button>`}
     <div class="foot"><button class="heart big" id="fv" aria-pressed="${favOf(m,heartUser())}">${HEART(favOf(m,heartUser()))}${favOf(m,heartUser())?(shared()?'In my library':`In ${esc(userById(S.activeUser)?.name||'my')}’s library`):(shared()?'Save to my library':'Save to library')}</button><button class="btn primary" id="cl">Done</button></div>`};
   openSheet(draw(), sh=>{
     sh.addEventListener('scroll',e=>{ const g=e.target; if(!g.classList||!g.classList.contains('gallery')) return; const i=Math.round(g.scrollLeft/g.clientWidth); sh.querySelectorAll('.gdots i').forEach((d,k)=>d.classList.toggle('on',k===i)) },true);
     sh.addEventListener('click',e=>{
       if(e.target.closest('#cl')) closeSheet();
       if(e.target.closest('#ed')) editSheet(m.id);
+      if(e.target.closest('#openrec')) recipeSheet(m.id);
+      if(e.target.closest('#addrec')) editSheet(m.id,null,{focus:'recipe'});
       if(e.target.closest('#fv')){ toggleFav(m); render(); save(); sh.innerHTML=draw(); }
+    });
+  });
+}
+let wakeLock=null;
+async function setWake(on){ try{ if(on){ wakeLock=await navigator.wakeLock.request('screen') } else if(wakeLock){ await wakeLock.release(); wakeLock=null } }catch(e){ wakeLock=null } }
+function recipeSheet(id){
+  const m=meal(id); if(!m||!m.recipe) return;
+  const R=m.recipe, ps=mealPhotos(m), done=new Set(), got=new Set();
+  const canWake='wakeLock' in navigator;
+  const draw=()=>`<div class="recpage">
+    ${ps.length?`<img class="rechero" src="${esc(pic(ps[0].u))}" alt="">`:(dishArt(m)?`<div class="artbig">${dishArt(m)}</div>`:'')}
+    <div class="titlerow"><h2>${esc(m.name)}</h2><button class="btn sm" id="redit">Edit</button></div>
+    <div class="facts">${R.time?`<span>${esc(R.time)}</span>`:''}${R.serves?`<span>Serves ${esc(R.serves)}</span>`:''}<span>${R.steps.length} step${R.steps.length===1?'':'s'}</span><span>${m.ingredients.length} ingredient${m.ingredients.length===1?'':'s'}</span></div>
+    ${m.ingredients.length?`<span class="lbl">Ingredients</span><ul class="recing">${m.ingredients.map((x,i)=>`<li><label><input type="checkbox" data-got="${i}" ${got.has(i)?'checked':''}><span>${esc(x)}</span></label></li>`).join('')}</ul>`:''}
+    <div class="lblrow"><span class="lbl">Steps</span><span class="note">${done.size} of ${R.steps.length} done</span></div>
+    <ol class="recsteps">${R.steps.map((t,i)=>`<li><button type="button" data-sd="${i}" aria-pressed="${done.has(i)}"><span class="snum">${done.has(i)?'✓':i+1}</span><span class="stxt">${esc(t)}</span></button></li>`).join('')}</ol>
+    <p class="note" style="margin:0">Tap a step when it’s done.</p>
+    <div class="foot">${canWake?`<button class="btn ghost" id="wake" aria-pressed="${!!wakeLock}">${wakeLock?'Screen stays on':'Keep screen on'}</button>`:'<span></span>'}<div class="row"><button class="btn" id="rback">Back to meal</button><button class="btn primary" id="rdone">Done</button></div></div>
+  </div>`;
+  openSheet(draw(), sh=>{
+    sh.classList.add('tall');
+    const close=()=>{ setWake(false) };
+    sh.addEventListener('change',e=>{ const g=e.target.closest('[data-got]'); if(g){ g.checked?got.add(+g.dataset.got):got.delete(+g.dataset.got) } });
+    sh.addEventListener('click',async e=>{
+      const sd=e.target.closest('[data-sd]'); if(sd){ const i=+sd.dataset.sd; done.has(i)?done.delete(i):done.add(i); const y=sh.scrollTop; sh.innerHTML=draw(); sh.scrollTop=y; return }
+      if(e.target.closest('#wake')){ await setWake(!wakeLock); const y=sh.scrollTop; sh.innerHTML=draw(); sh.scrollTop=y; if(!wakeLock&&e.target.closest('#wake')) toast('Your phone didn’t allow keeping the screen on'); return }
+      if(e.target.closest('#redit')){ close(); editSheet(m.id,null,{focus:'recipe'}); return }
+      if(e.target.closest('#rback')){ close(); mealSheet(m.id); return }
+      if(e.target.closest('#rdone')){ close(); closeSheet(); return }
     });
   });
 }
@@ -873,7 +1108,7 @@ function openSheet(html,onMount){
   $('#sheetRoot').innerHTML=`<div class="scrim" data-close><div class="sheetwrap"><button type="button" class="xclose" data-x aria-label="Close">${ICON.x}</button><div class="sheet" role="dialog" aria-modal="true">${html}</div></div></div>`;
   onMount&&onMount($('#sheetRoot .sheet'));
 }
-const closeSheet=()=>{$('#sheetRoot').innerHTML=''};
+const closeSheet=()=>{$('#sheetRoot').innerHTML=''; if(typeof setWake==='function') setWake(false)};
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
 
 function pickSheet(d,s,u,chooseType){
@@ -888,7 +1123,7 @@ function pickSheet(d,s,u,chooseType){
     let q='';
     const draw=()=>{ const cur=getSlot(d,s,pu); sh.querySelector('#clr').hidden=!cur;
       sh.querySelector('#pl').innerHTML=catalog().filter(m=>m.name.toLowerCase().includes(q)).sort((a,b)=>(favOf(b,pu)?1:0)-(favOf(a,pu)?1:0)).map(m=>
-      `<button data-p="${m.id}" ${m.id===cur?'aria-current="true"':''}>${m.img?`<img class="pthumb" src="${esc(pic(m.img))}" alt="">`:`<span class="pthumb" style="${cardStyle(m)}"></span>`}<span style="flex:1;min-width:0"><span style="display:block;font-weight:600">${esc(m.name)}</span><span class="psub">${esc(m.ingredients.slice(0,4).join(', '))}</span></span>${S.users.length>1?favDots(m):(favOf(m,pu)?'<span style="color:#E5345E" aria-label="In your library">♥</span>':'')}</button>`).join('')||'<p class="note">No match.</p>'};
+      `<button data-p="${m.id}" ${m.id===cur?'aria-current="true"':''}>${m.img?`<img class="pthumb" src="${esc(pic(m.img))}" alt="">`:(dishArt(m)?`<span class="pthumb dart">${dishArt(m)}</span>`:`<span class="pthumb" style="${cardStyle(m)}"></span>`)}<span style="flex:1;min-width:0"><span style="display:block;font-weight:600">${esc(m.name)}</span><span class="psub">${esc(m.ingredients.slice(0,4).join(', '))}</span></span>${S.users.length>1?favDots(m):(favOf(m,pu)?'<span style="color:#E5345E" aria-label="In your library">♥</span>':'')}</button>`).join('')||'<p class="note">No match.</p>'};
     draw();
     sh.querySelector('#q').addEventListener('input',e=>{q=e.target.value.trim().toLowerCase();draw()});
     sh.addEventListener('click',e=>{
@@ -980,9 +1215,11 @@ function ingSuggestions(){
   S.ings.forEach(add); catalog().forEach(m=>m.ingredients.forEach(add));
   return [...n.values()].sort((a,b)=>b.c-a.c||a.t.localeCompare(b.t)).map(e=>e.t);
 }
-function editSheet(id,assign){
+function editSheet(id,assign,opts){
   const m=id?(materialize(id)||meal(id)):null;
-  const draft={name:m?.name||'',color:m?.color||SWATCH_ORDER[S.meals.length%SWATCH_ORDER.length],border:m?.border||'',photos:(m?mealPhotos(m):[]).map(p=>({...p})),nut:{...(m?.nut||{})},ingredients:[...(m?.ingredients||[])]};
+  const draft={name:m?.name||'',color:m?.color||SWATCH_ORDER[S.meals.length%SWATCH_ORDER.length],border:m?.border||'',photos:(m?mealPhotos(m):[]).map(p=>({...p})),nut:{...(m?.nut||{})},ingredients:[...(m?.ingredients||[])],recipe:{time:m?.recipe?.time||'',serves:m?.recipe?.serves||'',steps:[...(m?.recipe?.steps||[])]}};
+  let recOpen=!!(draft.recipe.steps.length||opts?.focus==='recipe');
+  if(recOpen&&!draft.recipe.steps.length) draft.recipe.steps.push('');
   const MAXP=5; let queue=[];
   const TOP=['tomato','tangerine','mango','lime','teal','sky','grape','bubble'];
   const ORDER=[...TOP,...SWATCH_ORDER.filter(c=>!TOP.includes(c))];
@@ -1003,10 +1240,27 @@ function editSheet(id,assign){
     <span class="lbl">Amounts</span>
     <div class="nut">${NUTS.map(([k,l])=>`<div class="nutrow"><label class="nl" for="nut-${k}">${l}</label><input class="field nin" id="nut-${k}" data-nut="${k}" value="${esc(draft.nut[k]||'')}" placeholder="g" autocomplete="off"><div class="lmh">${['Low','Med','High'].map(v=>`<button type="button" data-lmh="${k}:${v}" aria-pressed="${draft.nut[k]===v}">${v}</button>`).join('')}</div></div>`).join('')}</div>
     <p class="note" style="margin:-6px 0 0">Type grams (like 30) or tap Low, Med or High.</p>
+    <div class="lblrow" id="recTop"><span class="lbl">Recipe</span><span class="note" id="rcount"></span></div>
+    <div id="recArea"></div>
     <p class="note" id="err" hidden></p>
     <div class="foot"><div class="row">${m?'<button class="btn danger ghost" id="del">Delete</button>':''}</div>
     <div class="row"><button class="btn ghost" id="cancel">Cancel</button><button class="btn primary" id="sv">Save meal</button></div></div>`, sh=>{
-    const er=sh.querySelector('#err'), area=sh.querySelector('#photoArea');
+    const er=sh.querySelector('#err'), area=sh.querySelector('#photoArea'), rarea=sh.querySelector('#recArea');
+    const grabRec=()=>{ rarea.querySelectorAll('[data-step]').forEach(t=>{draft.recipe.steps[+t.dataset.step]=t.value}); const tm=rarea.querySelector('#rtime'), sv=rarea.querySelector('#rserves'); if(tm) draft.recipe.time=tm.value; if(sv) draft.recipe.serves=sv.value };
+    const fit=t=>{ t.style.height='auto'; t.style.height=Math.min(t.scrollHeight+2,260)+'px' };
+    const recView=()=>{
+      const st=draft.recipe.steps;
+      sh.querySelector('#rcount').textContent=recOpen&&st.length?`${st.length} step${st.length===1?'':'s'}`:'';
+      if(!recOpen){ rarea.innerHTML=`<button type="button" class="recbtn add" id="recstart"><span class="ri">${ICON.plus}</span><span><b>Add a recipe</b><small>Step-by-step directions for making it</small></span></button>`; return }
+      rarea.innerHTML=`<div class="recedit">
+        <div class="row" style="flex-wrap:nowrap"><input class="field" id="rtime" value="${esc(draft.recipe.time)}" placeholder="Time, e.g. 30 min" autocomplete="off" style="flex:1;min-width:0"><input class="field" id="rserves" value="${esc(draft.recipe.serves)}" placeholder="Serves, e.g. 4" autocomplete="off" style="flex:1;min-width:0"></div>
+        <ol class="stepsedit">${st.map((t,i)=>`<li><span class="snum">${i+1}</span><textarea class="field" data-step="${i}" rows="2" placeholder="Describe this step">${esc(t)}</textarea><div class="sbtns"><button type="button" data-sup="${i}" aria-label="Move step up" ${i?'':'disabled'}>↑</button><button type="button" data-sdown="${i}" aria-label="Move step down" ${i<st.length-1?'':'disabled'}>↓</button><button type="button" data-sdel="${i}" aria-label="Delete step">✕</button></div></li>`).join('')}</ol>
+        <div class="row"><button type="button" class="btn sm" id="addstep">${ICON.plus}Add step</button><button type="button" class="btn sm ghost" id="pastebtn">Paste a recipe</button></div>
+        <div id="pasteBox" hidden><textarea class="field" id="pastetxt" rows="5" placeholder="Paste directions here. Each line or numbered step becomes its own step."></textarea><div class="row" style="margin-top:8px"><button type="button" class="btn sm primary" id="pastego">Split into steps</button></div></div>
+      </div>`;
+      rarea.querySelectorAll('[data-step]').forEach(t=>{ fit(t); t.addEventListener('input',()=>{ draft.recipe.steps[+t.dataset.step]=t.value; fit(t) }) });
+    };
+    recView();
     const photoView=()=>{
       sh.querySelector('#pcount').textContent=`${draft.photos.length} of ${MAXP}`;
       area.innerHTML=`<div class="pstrip">${draft.photos.map((p,i)=>`<div class="pth${i===0?' cover':''}"><img src="${esc(p.prev||pic(p.u))}" alt="" data-coverp="${i}" title="Make cover">${i===0&&draft.photos.length>1?'<span class="cv">Cover</span>':''}<button type="button" class="del" data-delp="${i}" aria-label="Remove photo">✕</button></div>`).join('')}
@@ -1048,6 +1302,15 @@ function editSheet(id,assign){
       const dp=e.target.closest('[data-delp]'); if(dp){draft.photos.splice(+dp.dataset.delp,1);photoView();prev();return}
       const cp=e.target.closest('[data-coverp]'); if(cp&&+cp.dataset.coverp>0){const [x]=draft.photos.splice(+cp.dataset.coverp,1); draft.photos.unshift(x); photoView(); prev(); return}
       const lm=e.target.closest('[data-lmh]'); if(lm){const [k,v]=lm.dataset.lmh.split(':'); const on=draft.nut[k]===v; draft.nut[k]=on?'':v; sh.querySelector('#nut-'+k).value=draft.nut[k]; sh.querySelectorAll(`[data-lmh^="${k}:"]`).forEach(b=>b.setAttribute('aria-pressed',!on&&b===lm)); return}
+      if(e.target.closest('#recstart')){ recOpen=true; if(!draft.recipe.steps.length) draft.recipe.steps.push(''); recView(); rarea.querySelector('[data-step]')?.focus(); return }
+      if(e.target.closest('#addstep')){ grabRec(); draft.recipe.steps.push(''); recView(); const t=rarea.querySelectorAll('[data-step]'); t[t.length-1]?.focus(); return }
+      const su=e.target.closest('[data-sup]'); if(su){ grabRec(); const i=+su.dataset.sup, a=draft.recipe.steps; [a[i-1],a[i]]=[a[i],a[i-1]]; recView(); return }
+      const sdn=e.target.closest('[data-sdown]'); if(sdn){ grabRec(); const i=+sdn.dataset.sdown, a=draft.recipe.steps; [a[i+1],a[i]]=[a[i],a[i+1]]; recView(); return }
+      const sdl=e.target.closest('[data-sdel]'); if(sdl){ grabRec(); draft.recipe.steps.splice(+sdl.dataset.sdel,1); recView(); return }
+      if(e.target.closest('#pastebtn')){ const b=rarea.querySelector('#pasteBox'); b.hidden=!b.hidden; if(!b.hidden) rarea.querySelector('#pastetxt').focus(); return }
+      if(e.target.closest('#pastego')){ grabRec(); const txt=rarea.querySelector('#pastetxt').value;
+        const parts=txt.split(/\n+|(?=\b\d{1,2}[.)]\s)/).map(x=>x.replace(/^\s*(step\s*)?\d{1,2}[.):-]?\s*/i,'').replace(/^[-•*]\s*/,'').trim()).filter(Boolean);
+        if(parts.length){ draft.recipe.steps=[...draft.recipe.steps.filter(x=>x.trim()),...parts]; recView() } return }
       const sg=e.target.closest('[data-sg]'); if(sg){addIngs(sg.dataset.sg);chips()}
       const r=e.target.closest('[data-rm]'); if(r){draft.ingredients.splice(+r.dataset.rm,1);chips()}
       if(e.target.closest('#cancel')) closeSheet();
@@ -1076,7 +1339,9 @@ function editSheet(id,assign){
         draft.ingredients.forEach(x=>{if(!known.has(x.toLowerCase())){S.ings.push(x);known.add(x.toLowerCase())}});
         if(S.ings.length>400) S.ings=S.ings.slice(-400);
         let mid=id;
-        const fields={name,color:draft.color,border:draft.border,nut,imgs,img:imgs[0]?.u||'',ratio:imgs[0]?.r||0,ingredients:draft.ingredients};
+        grabRec(); const steps=draft.recipe.steps.map(x=>String(x).trim()).filter(Boolean);
+        const recipe=steps.length?{time:draft.recipe.time.trim().slice(0,30),serves:draft.recipe.serves.trim().slice(0,20),steps:steps.map(x=>x.slice(0,600)).slice(0,40)}:null;
+        const fields={name,color:draft.color,border:draft.border,nut,imgs,img:imgs[0]?.u||'',ratio:imgs[0]?.r||0,ingredients:draft.ingredients,recipe};
         if(m) Object.assign(m,fields);
         else {mid=uid();S.meals.push({id:mid,...fields,favBy:[S.activeUser],rec:false})}
         if(assign){snap();setSlot(assign.d,assign.s,mid,assign.u||S.activeUser);showUser(assign.u||S.activeUser);}
@@ -1084,6 +1349,7 @@ function editSheet(id,assign){
       }
     });
     if(!m) setTimeout(()=>sh.querySelector('#mn').focus(),50);
+    if(opts?.focus==='recipe') setTimeout(()=>{ sh.querySelector('#recTop')?.scrollIntoView({block:'start'}); const t=rarea.querySelector('[data-step]'); if(t&&!t.value) t.focus() },120);
   });
 }
 
